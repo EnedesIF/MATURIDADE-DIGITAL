@@ -8,356 +8,332 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --verde:       #2d7a3d;
-    --verde-m:     #3a9e4f;
-    --verde-l:     #eaf5ec;
-    --azul:        #1a4b8c;
-    --azul-m:      #2563eb;
-    --azul-l:      #eff6ff;
-    --amarelo:     #b45309;
-    --amarelo-l:   #fef9ec;
-    --vermelho:    #c0392b;
-    --vermelho-l:  #fef2f2;
-    --roxo:        #5b21b6;
-    --roxo-l:      #f5f3ff;
-    --cinza-escuro:#111827;
-    --cinza:       #374151;
-    --cinza-m:     #6b7280;
-    --cinza-l:     #f3f4f6;
-    --borda:       #e5e7eb;
-    --branco:      #ffffff;
-    --sombra:      0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
-  }
+:root{
+  --verde:#2d7a3d;--verde-m:#3a9e4f;--verde-l:#eaf5ec;
+  --azul:#1a4b8c;--azul-m:#2563eb;--azul-l:#eff6ff;
+  --amarelo:#b45309;--amarelo-l:#fef9ec;
+  --vermelho:#c0392b;--vermelho-l:#fef2f2;
+  --roxo:#5b21b6;--roxo-l:#f5f3ff;
+  --cinza-escuro:#111827;--cinza:#374151;--cinza-m:#6b7280;
+  --cinza-l:#f3f4f6;--borda:#e5e7eb;--branco:#ffffff;
+  --sombra:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);min-height:100vh;}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* LOADING */
+#loading{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
+.spinner{width:44px;height:44px;border:3px solid var(--borda);border-top-color:var(--verde-m);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-  body {
-    font-family: 'Sora', sans-serif;
-    background: #f0f4f8;
-    color: var(--cinza-escuro);
-    min-height: 100vh;
-  }
+/* NAVBAR */
+.navbar{background:var(--branco);border-bottom:1px solid var(--borda);padding:0 32px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;}
+.nav-brand{font-size:14px;font-weight:800;color:var(--azul);padding:16px 0;margin-right:32px;white-space:nowrap;}
+.nav-brand span{color:var(--verde-m);}
+.nav-tabs{display:flex;gap:0;flex:1;overflow-x:auto;}
+.nav-tab{padding:16px 18px;font-size:13px;font-weight:600;color:var(--cinza-m);cursor:pointer;border:none;background:none;font-family:'Sora',sans-serif;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;}
+.nav-tab:hover{color:var(--cinza-escuro);}
+.nav-tab.ativo{color:var(--azul-m);border-bottom-color:var(--azul-m);}
+.nav-filtros{display:flex;align-items:center;gap:10px;margin-left:auto;padding:8px 0;}
+.nav-filtros select{font-family:'Sora',sans-serif;font-size:12px;padding:5px 10px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza-l);color:var(--cinza-escuro);cursor:pointer;}
+.btn-print{background:var(--verde-m);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.btn-print:hover{background:var(--verde);}
 
-  /* ── LOADING ── */
-  #loading {
-    position: fixed; inset: 0; background: var(--branco);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 9999; gap: 16px;
-  }
-  .spinner {
-    width: 44px; height: 44px;
-    border: 3px solid var(--borda);
-    border-top-color: var(--verde-m);
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #loading p { font-size: 14px; color: var(--cinza-m); }
+/* PAGES */
+.page{display:none;max-width:1100px;margin:0 auto;padding:28px 24px 60px;}
+.page.ativo{display:block;}
 
-  /* ── FILTROS TOPO ── */
-  #filtros-wrap {
-    background: var(--branco);
-    border-bottom: 1px solid var(--borda);
-    padding: 12px 32px;
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  }
-  #filtros-wrap label { font-size: 12px; font-weight: 600; color: var(--cinza-m); text-transform: uppercase; letter-spacing: .05em; }
-  #filtros-wrap select {
-    font-family: 'Sora', sans-serif;
-    font-size: 13px; padding: 6px 12px;
-    border: 1px solid var(--borda); border-radius: 6px;
-    background: var(--cinza-l); color: var(--cinza-escuro);
-    cursor: pointer;
-  }
-  #filtros-wrap select:focus { outline: none; border-color: var(--verde-m); }
-  .btn-print {
-    margin-left: auto;
-    background: var(--verde-m); color: #fff;
-    border: none; border-radius: 6px;
-    padding: 7px 18px; font-size: 13px; font-weight: 600;
-    font-family: 'Sora', sans-serif; cursor: pointer;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .btn-print:hover { background: var(--verde); }
+/* HEADER */
+.header-bloco{background:linear-gradient(135deg,#0f3460 0%,#1a4b8c 50%,#2563eb 100%);border-radius:16px;padding:32px 40px;color:#fff;margin-bottom:24px;position:relative;overflow:hidden;}
+.header-bloco::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:rgba(255,255,255,.06);border-radius:50%;}
+.header-logo{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;opacity:.7;margin-bottom:6px;}
+.header-title{font-size:26px;font-weight:800;line-height:1.2;margin-bottom:4px;}
+.header-sub{font-size:13px;opacity:.75;}
+.header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-top:14px;}
 
-  /* ── MAIN ── */
-  .relatorio { max-width: 1100px; margin: 0 auto; padding: 32px 24px 60px; }
+/* KPIs */
+.kpis-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
+.kpi-card{background:var(--branco);border-radius:12px;padding:18px 16px;box-shadow:var(--sombra);border-top:3px solid transparent;}
+.kpi-card.verde{border-top-color:var(--verde-m);}
+.kpi-card.azul{border-top-color:var(--azul-m);}
+.kpi-card.amarelo{border-top-color:#f59e0b;}
+.kpi-card.roxo{border-top-color:#8b5cf6;}
+.kpi-card.destaque{border-top-color:#10b981;background:#ecfdf5;}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cinza-m);margin-bottom:6px;}
+.kpi-valor{font-size:30px;font-weight:800;line-height:1;}
+.kpi-valor.verde{color:var(--verde-m);}
+.kpi-valor.azul{color:var(--azul-m);}
+.kpi-valor.amarelo{color:#f59e0b;}
+.kpi-valor.roxo{color:#8b5cf6;}
+.kpi-valor.destaque{color:#059669;}
+.kpi-desc{font-size:11px;color:var(--cinza-m);margin-top:4px;line-height:1.4;}
 
-  /* ── HEADER ── */
-  .header-bloco {
-    background: linear-gradient(135deg, #0f3460 0%, #1a4b8c 50%, #2563eb 100%);
-    border-radius: 16px; padding: 36px 40px;
-    color: #fff; margin-bottom: 28px;
-    position: relative; overflow: hidden;
-  }
-  .header-bloco::before {
-    content: '';
-    position: absolute; top: -60px; right: -60px;
-    width: 240px; height: 240px;
-    background: rgba(255,255,255,.06);
-    border-radius: 50%;
-  }
-  .header-bloco::after {
-    content: '';
-    position: absolute; bottom: -80px; right: 120px;
-    width: 180px; height: 180px;
-    background: rgba(255,255,255,.04);
-    border-radius: 50%;
-  }
-  .header-logo { font-size: 11px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; opacity: .7; margin-bottom: 8px; }
-  .header-title { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 6px; }
-  .header-sub { font-size: 14px; opacity: .75; }
-  .header-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
-    border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 600;
-    margin-top: 16px;
-  }
+/* SECAO */
+.secao{margin-bottom:24px;}
+.secao-titulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cinza-m);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.secao-titulo::after{content:'';flex:1;height:1px;background:var(--borda);}
 
-  /* ── KPIs ── */
-  .kpis-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
-    margin-bottom: 28px;
-  }
-  .kpi-card {
-    background: var(--branco); border-radius: 12px;
-    padding: 20px 18px; box-shadow: var(--sombra);
-    border-top: 3px solid transparent;
-    transition: transform .2s;
-  }
-  .kpi-card:hover { transform: translateY(-2px); }
-  .kpi-card.verde  { border-top-color: var(--verde-m); }
-  .kpi-card.azul   { border-top-color: var(--azul-m); }
-  .kpi-card.amarelo{ border-top-color: #f59e0b; }
-  .kpi-card.roxo   { border-top-color: #8b5cf6; }
-  .kpi-card.destaque{ border-top-color: #10b981; background: #ecfdf5; }
-  .kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cinza-m); margin-bottom: 8px; }
-  .kpi-valor { font-size: 32px; font-weight: 800; line-height: 1; }
-  .kpi-valor.verde  { color: var(--verde-m); }
-  .kpi-valor.azul   { color: var(--azul-m); }
-  .kpi-valor.amarelo{ color: #f59e0b; }
-  .kpi-valor.roxo   { color: #8b5cf6; }
-  .kpi-valor.destaque{ color: #059669; }
-  .kpi-desc { font-size: 11px; color: var(--cinza-m); margin-top: 6px; line-height: 1.4; }
+/* FORMULA */
+.formula-card{background:var(--branco);border-radius:12px;padding:22px 26px;box-shadow:var(--sombra);border-left:4px solid var(--azul-m);}
+.formula-box{background:var(--azul-l);border-radius:8px;padding:12px 18px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--azul);margin-bottom:14px;}
+.formula-passos{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;}
+.passo{background:var(--cinza-l);border-radius:8px;padding:10px 12px;text-align:center;}
+.passo-num{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--cinza-m);margin-bottom:4px;}
+.passo-val{font-size:20px;font-weight:800;}
+.passo-desc{font-size:10px;color:var(--cinza-m);margin-top:2px;}
+.resultado-abdi{margin-top:14px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #6ee7b7;border-radius:8px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;}
+.res-label{font-size:13px;font-weight:600;color:#065f46;}
+.res-val{font-size:28px;font-weight:800;color:#059669;}
+.res-meta{font-size:11px;color:#047857;}
 
-  /* ── SECAO ── */
-  .secao { margin-bottom: 28px; }
-  .secao-titulo {
-    font-size: 13px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .08em; color: var(--cinza-m);
-    margin-bottom: 14px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .secao-titulo::after { content: ''; flex: 1; height: 1px; background: var(--borda); }
+/* COMP */
+.comp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.comp-card{background:var(--branco);border-radius:12px;padding:20px;box-shadow:var(--sombra);text-align:center;}
+.comp-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cinza-m);margin-bottom:8px;}
+.num-antes{font-size:34px;font-weight:800;color:#ef4444;}
+.num-depois{font-size:34px;font-weight:800;color:#10b981;}
+.num-evol{font-size:34px;font-weight:800;color:var(--azul-m);}
+.comp-sub{font-size:11px;color:var(--cinza-m);margin-top:4px;}
 
-  /* ── FORMULA ABDI ── */
-  .formula-card {
-    background: var(--branco); border-radius: 12px; padding: 24px 28px;
-    box-shadow: var(--sombra); border-left: 4px solid var(--azul-m);
-  }
-  .formula-titulo { font-size: 14px; font-weight: 700; color: var(--azul); margin-bottom: 16px; }
-  .formula-box {
-    background: var(--azul-l); border-radius: 8px; padding: 14px 20px;
-    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600;
-    color: var(--azul); margin-bottom: 14px;
-  }
-  .formula-passos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px; }
-  .passo {
-    background: var(--cinza-l); border-radius: 8px; padding: 12px 14px;
-    text-align: center;
-  }
-  .passo-num { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--cinza-m); margin-bottom: 4px; }
-  .passo-val { font-size: 18px; font-weight: 800; color: var(--cinza-escuro); }
-  .passo-desc { font-size: 11px; color: var(--cinza-m); margin-top: 2px; }
-  .resultado-abdi {
-    margin-top: 16px;
-    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-    border: 1px solid #6ee7b7;
-    border-radius: 8px; padding: 14px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .resultado-abdi .res-label { font-size: 13px; font-weight: 600; color: #065f46; }
-  .resultado-abdi .res-val   { font-size: 26px; font-weight: 800; color: #059669; }
-  .resultado-abdi .res-meta  { font-size: 12px; color: #047857; }
+/* BARRAS */
+.barra-wrap{background:var(--branco);border-radius:12px;padding:22px 26px;box-shadow:var(--sombra);}
+.barra-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.barra-row:last-child{margin-bottom:0;}
+.barra-label{width:120px;font-size:12px;font-weight:600;flex-shrink:0;}
+.barra-tracks{flex:1;display:flex;flex-direction:column;gap:4px;}
+.barra-track{height:12px;border-radius:6px;background:var(--cinza-l);overflow:hidden;}
+.fill-antes{height:100%;border-radius:6px;background:linear-gradient(90deg,#fca5a5,#ef4444);}
+.fill-depois{height:100%;border-radius:6px;background:linear-gradient(90deg,#6ee7b7,#10b981);}
+.barra-vals{width:80px;text-align:right;flex-shrink:0;}
+.val-antes{font-size:11px;color:#ef4444;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.val-depois{font-size:11px;color:#10b981;font-weight:700;font-family:'JetBrains Mono',monospace;}
 
-  /* ── COMPARATIVO SCORES ── */
-  .comp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .comp-card {
-    background: var(--branco); border-radius: 12px; padding: 24px;
-    box-shadow: var(--sombra); text-align: center;
-  }
-  .comp-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cinza-m); margin-bottom: 10px; }
-  .comp-antes { font-size: 36px; font-weight: 800; color: #ef4444; }
-  .comp-depois { font-size: 36px; font-weight: 800; color: #10b981; }
-  .comp-evolucao { font-size: 36px; font-weight: 800; color: var(--azul-m); }
-  .comp-sub { font-size: 12px; color: var(--cinza-m); margin-top: 4px; }
-  .arrow-evolucao {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    margin-top: 12px;
-  }
-  .arrow-evolucao .seta { font-size: 20px; }
+/* NIVEIS */
+.niveis-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.nivel-card{background:var(--branco);border-radius:12px;padding:16px;box-shadow:var(--sombra);text-align:center;}
+.nivel-nome{font-size:11px;font-weight:700;margin-bottom:12px;}
+.nivel-nums{display:flex;justify-content:space-around;margin-bottom:8px;}
+.nivel-num .val{font-size:26px;font-weight:800;line-height:1;}
+.nivel-num .sub{font-size:9px;font-weight:700;text-transform:uppercase;margin-top:2px;}
+.nivel-num.antes .val{color:#ef4444;}
+.nivel-num.antes .sub{color:#ef4444;opacity:.7;}
+.nivel-num.depois .val{color:#10b981;}
+.nivel-num.depois .sub{color:#10b981;opacity:.7;}
+.nivel-var{font-size:12px;font-weight:700;}
+.positivo{color:#10b981;}.negativo{color:#ef4444;}.neutro{color:var(--cinza-m);}
 
-  /* ── BARRAS COMPARATIVAS ── */
-  .barra-comp-wrap { background: var(--branco); border-radius: 12px; padding: 24px 28px; box-shadow: var(--sombra); }
-  .barra-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-  .barra-row:last-child { margin-bottom: 0; }
-  .barra-label { width: 130px; font-size: 12px; font-weight: 600; color: var(--cinza-escuro); flex-shrink: 0; }
-  .barra-tracks { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-  .barra-track { height: 14px; border-radius: 8px; background: var(--cinza-l); position: relative; overflow: hidden; }
-  .barra-fill-antes  { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #fca5a5, #ef4444); transition: width 1s ease; }
-  .barra-fill-depois { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #6ee7b7, #10b981); transition: width 1s ease; }
-  .barra-vals { width: 90px; text-align: right; flex-shrink: 0; }
-  .barra-val-antes  { font-size: 11px; color: #ef4444; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .barra-val-depois { font-size: 11px; color: #10b981; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.chart-card{background:var(--branco);border-radius:12px;padding:20px;box-shadow:var(--sombra);}
+.chart-titulo{font-size:12px;font-weight:700;color:var(--cinza-escuro);margin-bottom:14px;}
+.chart-wrap{position:relative;height:220px;}
 
-  /* ── NIVEIS ── */
-  .niveis-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .nivel-card {
-    background: var(--branco); border-radius: 12px; padding: 18px;
-    box-shadow: var(--sombra); text-align: center;
-  }
-  .nivel-nome { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
-  .nivel-antes-depois {
-    display: flex; justify-content: space-around; gap: 8px; margin-bottom: 10px;
-  }
-  .nivel-num { text-align: center; }
-  .nivel-num .val { font-size: 28px; font-weight: 800; line-height: 1; }
-  .nivel-num .sub { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
-  .nivel-num.antes .val  { color: #ef4444; }
-  .nivel-num.antes .sub  { color: #ef4444; opacity: .7; }
-  .nivel-num.depois .val { color: #10b981; }
-  .nivel-num.depois .sub { color: #10b981; opacity: .7; }
-  .nivel-variacao { font-size: 13px; font-weight: 700; }
-  .nivel-variacao.positivo { color: #10b981; }
-  .nivel-variacao.negativo { color: #ef4444; }
-  .nivel-variacao.neutro   { color: var(--cinza-m); }
+/* CONQUISTAS */
+.conquistas-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.conquista{background:var(--branco);border-radius:10px;padding:14px 16px;box-shadow:var(--sombra);display:flex;align-items:flex-start;gap:10px;}
+.conquista-icon{font-size:18px;flex-shrink:0;}
+.conquista-text{font-size:13px;color:var(--cinza);line-height:1.5;}
 
-  /* ── CHARTS ── */
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .chart-card {
-    background: var(--branco); border-radius: 12px; padding: 22px;
-    box-shadow: var(--sombra);
-  }
-  .chart-titulo { font-size: 13px; font-weight: 700; color: var(--cinza-escuro); margin-bottom: 16px; }
-  .chart-wrap { position: relative; height: 220px; }
+/* LEGENDA */
+.legenda{display:flex;gap:16px;margin-bottom:10px;}
+.legenda-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--cinza-m);}
+.legenda-dot{width:10px;height:10px;border-radius:50%;}
+.legenda-dot.antes{background:#ef4444;}
+.legenda-dot.depois{background:#10b981;}
 
-  /* ── RANKING ── */
-  .ranking-card { background: var(--branco); border-radius: 12px; padding: 24px; box-shadow: var(--sombra); }
-  .ranking-header {
-    display: grid; grid-template-columns: 40px 1fr 90px 90px 80px 120px 120px;
-    gap: 8px; padding: 0 8px 10px; border-bottom: 2px solid var(--borda);
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .07em; color: var(--cinza-m);
-  }
-  .ranking-row {
-    display: grid; grid-template-columns: 40px 1fr 90px 90px 80px 120px 120px;
-    gap: 8px; padding: 10px 8px;
-    border-bottom: 1px solid var(--borda);
-    align-items: center; font-size: 13px;
-    transition: background .15s;
-  }
-  .ranking-row:last-child { border-bottom: none; }
-  .ranking-row:hover { background: var(--cinza-l); border-radius: 8px; }
-  .rank-pos { font-weight: 800; color: var(--cinza-m); font-size: 14px; text-align: center; }
-  .rank-pos.top3 { color: var(--verde-m); }
-  .rank-nome { font-weight: 600; font-size: 12px; }
-  .rank-score { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; text-align: center; }
-  .rank-score.antes  { color: #ef4444; }
-  .rank-score.depois { color: #10b981; }
-  .rank-evolucao {
-    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700;
-    color: var(--azul-m); text-align: center;
-  }
-  .tag-nivel {
-    display: inline-block; padding: 3px 10px; border-radius: 20px;
-    font-size: 10px; font-weight: 700; text-align: center;
-  }
-  .nivel-inicial       { background: #fef2f2; color: #c0392b; }
-  .nivel-basico        { background: #fef9ec; color: #b45309; }
-  .nivel-intermediario { background: var(--azul-l); color: var(--azul); }
-  .nivel-avancado      { background: var(--verde-l); color: var(--verde); }
-  .nivel-em-desenvolvimento { background: #fef9ec; color: #b45309; }
-  .nivel-em-transicao  { background: var(--azul-l); color: var(--azul); }
-  .nivel-digitalmente-ativo { background: var(--verde-l); color: var(--verde); }
-  .nivel-referencia-digital { background: var(--roxo-l); color: var(--roxo); }
-  .nivel-iniciante-digital  { background: #fef2f2; color: #c0392b; }
+/* METODOLOGIA */
+.metod-table{width:100%;border-collapse:collapse;font-size:13px;}
+.metod-table th{background:var(--azul);color:#fff;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.metod-table td{padding:9px 14px;border-bottom:1px solid var(--borda);}
+.metod-table tr:hover td{background:var(--cinza-l);}
+.metod-table .perg-row td{background:var(--azul-l);font-weight:700;color:var(--azul);}
+.badge-pts{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.pts-0{background:#fef2f2;color:#c0392b;}
+.pts-25{background:#fef9ec;color:#b45309;}
+.pts-50{background:#eff6ff;color:#1a4b8c;}
+.pts-75{background:#f5f3ff;color:#5b21b6;}
+.pts-100{background:#eaf5ec;color:#2d7a3d;}
+.niveis-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:20px;}
+.niveis-table th{background:var(--cinza-escuro);color:#fff;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.niveis-table td{padding:9px 14px;border-bottom:1px solid var(--borda);}
 
-  /* ── CONQUISTAS ── */
-  .conquistas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .conquista-item {
-    background: var(--branco); border-radius: 10px; padding: 14px 16px;
-    box-shadow: var(--sombra); display: flex; align-items: flex-start; gap: 10px;
-  }
-  .conquista-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-  .conquista-text { font-size: 13px; color: var(--cinza); line-height: 1.5; }
-  .conquista-text strong { color: var(--cinza-escuro); }
+/* RANKING */
+.rank-table{width:100%;border-collapse:collapse;font-size:13px;}
+.rank-table th{background:var(--cinza-escuro);color:#fff;padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;position:sticky;top:57px;}
+.rank-table td{padding:9px 12px;border-bottom:1px solid var(--borda);}
+.rank-table tr:hover td{background:var(--cinza-l);}
+.rank-table .top3{color:var(--verde-m);font-weight:800;}
+.mono{font-family:'JetBrains Mono',monospace;font-weight:700;}
+.tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;}
+.tag-0{background:#fef2f2;color:#c0392b;}
+.tag-1{background:#fef9ec;color:#b45309;}
+.tag-2{background:#eff6ff;color:#1a4b8c;}
+.tag-3{background:#eaf5ec;color:#2d7a3d;}
+.tag-4{background:#f5f3ff;color:#5b21b6;}
 
-  /* ── METODOLOGIA ── */
-  .metod-card { background: var(--branco); border-radius: 12px; padding: 24px; box-shadow: var(--sombra); }
-  .metod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
-  .metod-item { padding: 14px; background: var(--cinza-l); border-radius: 8px; }
-  .metod-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--cinza-m); margin-bottom: 4px; }
-  .metod-val { font-size: 13px; color: var(--cinza-escuro); font-weight: 500; }
+/* DATA TABLE */
+.data-controles{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.data-controles select{font-family:'Sora',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza-l);}
+.data-controles input{font-family:'Sora',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--borda);border-radius:6px;width:200px;}
+.data-info{font-size:12px;color:var(--cinza-m);margin-left:auto;}
+.data-table-wrap{overflow-x:auto;border-radius:10px;box-shadow:var(--sombra);}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px;}
+.data-table th{background:var(--cinza-escuro);color:#fff;padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;position:sticky;top:57px;}
+.data-table td{padding:8px 12px;border-bottom:1px solid var(--borda);white-space:nowrap;}
+.data-table tr:hover td{background:var(--cinza-l);}
+.paginacao{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;}
+.btn-pag{padding:6px 12px;border:1px solid var(--borda);border-radius:6px;font-size:12px;cursor:pointer;background:var(--branco);font-family:'Sora',sans-serif;}
+.btn-pag:hover{background:var(--cinza-l);}
+.btn-pag.ativo{background:var(--azul-m);color:#fff;border-color:var(--azul-m);}
 
-  /* ── FOOTER ── */
-  .footer {
-    text-align: center; font-size: 11px; color: var(--cinza-m);
-    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--borda);
-  }
+/* FOOTER */
+.footer{text-align:center;font-size:11px;color:var(--cinza-m);margin-top:32px;padding-top:16px;border-top:1px solid var(--borda);}
 
-  /* ── LEGENDA ── */
-  .legenda { display: flex; gap: 20px; margin-bottom: 10px; }
-  .legenda-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--cinza-m); }
-  .legenda-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .legenda-dot.antes  { background: #ef4444; }
-  .legenda-dot.depois { background: #10b981; }
-
-  /* ── PRINT ── */
-  @media print {
-    body { background: white; }
-    #filtros-wrap { display: none; }
-    .relatorio { max-width: 100%; padding: 20px; }
-    .kpi-card:hover, .ranking-row:hover { transform: none; background: transparent; }
-    .header-bloco { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .btn-print { display: none; }
-  }
-
-  @media (max-width: 768px) {
-    .kpis-grid { grid-template-columns: repeat(2, 1fr); }
-    .charts-grid { grid-template-columns: 1fr; }
-    .niveis-grid { grid-template-columns: repeat(2, 1fr); }
-    .conquistas-grid { grid-template-columns: 1fr; }
-    .formula-passos { grid-template-columns: repeat(2, 1fr); }
-    .comp-grid { grid-template-columns: 1fr; }
-  }
+@media print{
+  .navbar{position:relative;}
+  .btn-print,.nav-filtros{display:none;}
+  .page{display:block!important;max-width:100%;padding:16px;}
+  .header-bloco{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+@media(max-width:768px){
+  .kpis-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-grid{grid-template-columns:1fr;}
+  .niveis-grid{grid-template-columns:repeat(2,1fr);}
+  .conquistas-grid{grid-template-columns:1fr;}
+  .formula-passos{grid-template-columns:repeat(2,1fr);}
+  .comp-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
+<div id="loading"><div class="spinner"></div><p style="font-size:14px;color:#6b7280">Carregando dados do Supabase…</p></div>
 
-<div id="loading">
-  <div class="spinner"></div>
-  <p>Carregando dados do Supabase…</p>
+<div id="app" style="display:none">
+<nav class="navbar">
+  <div class="nav-brand">ENEDES <span>DIGITAL</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab ativo" onclick="irPara('dash')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="irPara('metod')">📋 Metodologia</button>
+    <button class="nav-tab" onclick="irPara('ranking')">🏆 Ranking</button>
+    <button class="nav-tab" onclick="irPara('antes')">📝 ANTES</button>
+    <button class="nav-tab" onclick="irPara('depois')">📝 DEPOIS</button>
+  </div>
+  <div class="nav-filtros">
+    <select id="filtro-turma" onchange="aplicarFiltro()"><option value="">Todas as turmas</option></select>
+    <button class="btn-print" onclick="window.print()">🖨️ PDF</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="page ativo" id="page-dash">
+  <div class="header-bloco">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iQ2FtYWRhXzEiIGRhdGEtbmFtZT0iQ2FtYWRhIDEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDE5MjAgMTA4MCI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogIzQxNjU4YTsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiAjZmJiYjQ0OwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMzMTlkNDA7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxnPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNjI5LjI5LDUxMy42NmMxLjczLDMxLjk0LDE5Ljg2LDUyLjY2LDQ3LjQ4LDUyLjY2LDE4LjEzLDAsMzQuMS05LjA2LDM3Ljk4LTIzLjc0aDU3Ljg0Yy0xMi45NSw0My42LTQ3LjkxLDY4LjItOTMuMjQsNjguMi03MC43OSwwLTEwNi4xOS0zOC44NS0xMDYuMTktMTE1LjY4LDAtNjUuNjEsMzcuNTUtMTA3LjkxLDEwMi43My0xMDcuOTFzOTkuNzEsNDIuMyw5OS43MSwxMjYuNDdoLTE0Ni4zM1pNNzE3Ljc4LDQ3OC4yNmMtLjg2LTMxLjUxLTIxLjU4LTQ2LjYyLTQzLjYtNDYuNjJzLTQxLjAxLDE3LjI3LTQzLjE3LDQ2LjYyaDg2Ljc2WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNOTMxLjAzLDYwNS4xN3YtMTI4LjYzYzAtMzIuODEtOS40OS00MS44Ny0zNi4yNi00MS44Ny0yOS4zNSwwLTQzLjYsMTYuNC00My42LDQ4Ljc4djEyMS43M2gtNTYuMTF2LTIxMi4zN2g1My41M3YzMS4wOGMxMi45NS0yMy43NCwzNC41My0zNi42OSw2OC42My0zNi42OSw0MC41NywwLDcwLjM2LDI0LjYsNzAuMzYsNzAuNzl2MTQ3LjE5aC01Ni41NVoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTEwNjMuNTYsNTEzLjY2YzEuNzMsMzEuOTQsMTkuODYsNTIuNjYsNDcuNDgsNTIuNjYsMTguMTMsMCwzNC4xLTkuMDYsMzcuOTgtMjMuNzRoNTcuODRjLTEyLjk1LDQzLjYtNDcuOTEsNjguMi05My4yNCw2OC4yLTcwLjc5LDAtMTA2LjE5LTM4Ljg1LTEwNi4xOS0xMTUuNjgsMC02NS42MSwzNy41NS0xMDcuOTEsMTAyLjczLTEwNy45MXM5OS43MSw0Mi4zLDk5LjcxLDEyNi40N2gtMTQ2LjMzWk0xMTUyLjA1LDQ3OC4yNmMtLjg2LTMxLjUxLTIxLjU4LTQ2LjYyLTQzLjYtNDYuNjJzLTQxLjAxLDE3LjI3LTQzLjE3LDQ2LjYyaDg2Ljc2WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTM3Ni41Miw2MDUuMTdsLS40My0yNS45Yy0xMy4zOCwyMS41OC0zMy4yNCwzMS41MS01OS4xNCwzMS41MS01My41MywwLTkxLjk0LTQyLjMtOTEuOTQtMTEzLjk2LDAtNjQuMzEsMzIuMzgtMTA5LjY0LDg3LjE5LTEwOS42NCwyNi4zMywwLDQ3LjA1LDEwLjc5LDYzLjAyLDMzLjI0di0xMDUuMzJoNTUuMjV2MjkwLjA3aC01My45NlpNMTM3Ny4zOCw1MDQuMTZjMC00Ni4xOS0xNS45Ny02OS4wNi00Ny4wNS02OS4wNi0zMi44LDAtNDguMzQsMjIuMDEtNDguMzQsNjUuNjEsMCwzNy45OSwxOS44NSw2NC4zMiw0Ny45MSw2NC4zMnM0Ny40OC0yNS4wNCw0Ny40OC02MC44NloiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE1MDYuNDYsNTEzLjY2YzEuNzMsMzEuOTQsMTkuODUsNTIuNjYsNDcuNDgsNTIuNjYsMTguMTMsMCwzNC4xLTkuMDYsMzcuOTktMjMuNzRoNTcuODRjLTEyLjk1LDQzLjYtNDcuOTEsNjguMi05My4yNCw2OC4yLTcwLjc5LDAtMTA2LjE5LTM4Ljg1LTEwNi4xOS0xMTUuNjgsMC02NS42MSwzNy41NS0xMDcuOTEsMTAyLjczLTEwNy45MXM5OS43Miw0Mi4zLDk5LjcyLDEyNi40N2gtMTQ2LjMzWk0xNTk0Ljk1LDQ3OC4yNmMtLjg2LTMxLjUxLTIxLjU4LTQ2LjYyLTQzLjYtNDYuNjJzLTQxLjAxLDE3LjI3LTQzLjE2LDQ2LjYyaDg2Ljc2WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTgwMCw0NTcuMTFjLTMuMDItMjAuNzItMTQuMjQtMjguMDYtMzkuNzEtMjguMDYtMjEuMTUsMC0zMy4yNCw1LjE4LTMzLjI0LDE3LjdzMTEuNjYsMTcuNywzNC41MywyNC4xN2MyNC4xNyw2LjkxLDQ3LjA1LDExLjY2LDYzLjQ1LDE4LjEzLDIyLjQ1LDkuMDYsMzQuOTcsMjMuNzQsMzQuOTcsNTEuMzcsMCw0NC4wMy0zMi4zOCw3MC4zNi05Mi44MSw3MC4zNi02NS4xOCwwLTEwMS40NC0zMC42NS0xMDIuMy03My44MWg1Ny44NGMwLDE5Ljg2LDE2LjgzLDMxLjUxLDQ0LjAzLDMxLjUxLDE5Ljg2LDAsMzcuNTUtNi4wNCwzNy41NS0yMi4wMSwwLTE1LjExLTE1Ljk3LTE5Ljg2LTM0LjEtMjQuMTctMzUuODItOC42My01NS42OC0xNC42OC03MC43OS0yNC4xNy0xOS44Ni0xMi41Mi0yNi43Ni0yOC45Mi0yNi43Ni00Ny45MSwwLTM1LjgzLDI0LjYtNjMuMDIsODkuMzUtNjMuMDIsNjEuMjksMCw4OC45MiwyNC4xNyw5MS45NCw2OS45M2gtNTMuOTVaIi8+CiAgPC9nPgogIDxnPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNjcuOTYsNzg4LjR2LTc4LjJoMzYuOTR2Ny41MWgtMjguNDJ2MjcuMzloMjQuNjd2Ny41MWgtMjQuNjd2MjguM2gyOC40MnY3LjVoLTM2Ljk0WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTIyLjE4LDc4OC45MmMtMi45Ni0uMjctNS4zOC0uNTktNy4yNy0uOTd2LTYuN2M0Ljg1LjgzLDkuODUsMS4yNSwxNSwxLjI1LDIuODgsMCw1LjA0LS4zOCw2LjQ4LTEuMTQsMS40NC0uNzYsMi4zOS0xLjgyLDIuODQtMy4xOHMuNjgtMy4yMi42OC01LjU3YzAtMi44MS0uMTUtNC43OS0uNDUtNS45Ny0uMy0xLjE3LS44Mi0xLjk3LTEuNTMtMi4zOC0uNzItLjQyLTEuOTUtLjc0LTMuNjktLjk3bC0xMS4zNy0xLjcxYy0zLjY0LS41My02LjEtMS45MS03LjM5LTQuMTUtMS4yOS0yLjIzLTEuOTMtNS44OS0xLjkzLTEwLjk3LDAtNC41NS43Mi04LjA1LDIuMTYtMTAuNTFzMy40My00LjE1LDUuOTctNS4wNmMyLjU0LS45LDUuODEtMS4zNyw5LjgzLTEuMzcsMi4zNSwwLDQuODUuMTYsNy41LjQ2LDIuNjUuMyw0Ljc3LjY3LDYuMzcsMS4xNHY2LjU5Yy0xLjc0LS4zOC0zLjg4LS43LTYuNDItLjk3cy01LjAyLS40LTcuNDUtLjRjLTMuNTYsMC02LjE0LjY1LTcuNzMsMS45My0xLjU5LDEuMjktMi4zOSwzLjgzLTIuMzksNy42MiwwLDIuNS4xNSw0LjM0LjQ1LDUuNTEuMywxLjE4LjgxLDEuOTksMS41MywyLjQ1LjcyLjQ1LDEuOTEuNzksMy41OCwxLjAybDExLjAyLDEuNDhjMi40My4zLDQuMzQuOTMsNS43NCwxLjg3LDEuNC45NSwyLjQ0LDIuNTIsMy4xMiw0LjcyLjY4LDIuMiwxLjAyLDUuMzUsMS4wMiw5LjQzLDAsNi4zNy0xLjM2LDEwLjc4LTQuMDksMTMuMjUtMi43MywyLjQ2LTcuMTYsMy42OS0xMy4zLDMuNjktMi41OCwwLTUuMzQtLjE0LTguMy0uNFoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE4Mi40OCw3ODguOTJjLTIuMjQuMjYtNC40Mi40LTYuNTQuNC01LjYxLDAtOS43Mi0uOTktMTIuMzMtMi45NS0yLjYxLTEuOTgtNC4zLTQuOTctNS4wNi04Ljk4cy0xLjE0LTEwLjAxLTEuMTQtMTcuOTYuNDctMTQsMS40Mi0xOC4xM2MuOTUtNC4xNCwyLjcxLTcuMTMsNS4yOS04Ljk4LDIuNTctMS44Niw2LjQ0LTIuNzksMTEuNTktMi43OSwyLjEyLDAsNC4zMi4xNCw2LjU5LjQsMi4yNy4yNyw0LjA5LjYzLDUuNDYsMS4wOHY2LjU5Yy0zLjI2LS43NS02LjY3LTEuMTQtMTAuMjMtMS4xNHMtNi4yNy41OS03LjksMS43NmMtMS42MywxLjE4LTIuNzMsMy4zLTMuMyw2LjM3LS41NywzLjA2LS44NSw3Ljk4LS44NSwxNC43MnMuMjgsMTEuOS44NSwxNWMuNTcsMy4xMSwxLjY4LDUuMjMsMy4zNSw2LjM3LDEuNjcsMS4xNCw0LjMyLDEuNzEsNy45NiwxLjcxLDMuODcsMCw3LjM1LS40MiwxMC40Ni0xLjI2djYuNzFjLTEuNTIuNDUtMy4zOS44MS01LjYyLDEuMDhaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yMDMuNzMsNzg2LjkzYy0yLjY5LTEuNTktNC40My00LjM2LTUuMjMtOC4zLS44LTMuOTMtMS4xOS0xMC4zNC0xLjE5LTE5LjJzLjQtMTUuMjcsMS4xOS0xOS4yMSwyLjU0LTYuNzEsNS4yMy04LjNjMi42OS0xLjYsNy4xMS0yLjM5LDEzLjI0LTIuMzlzMTAuNTUuNzksMTMuMjQsMi4zOWMyLjY5LDEuNTksNC40MSw0LjM2LDUuMTcsOC4zLjc2LDMuOTQsMS4xNCwxMC4zNCwxLjE0LDE5LjIxcy0uMzgsMTUuMjctMS4xNCwxOS4yYy0uNzYsMy45NC0yLjQ4LDYuNzEtNS4xNyw4LjMtMi42OSwxLjYtNy4xLDIuMzktMTMuMjQsMi4zOXMtMTAuNTUtLjc5LTEzLjI0LTIuMzlaTTIyNC45OSw3ODAuNzljMS41NS0xLjA2LDIuNTItMy4wMywyLjktNS45MXMuNTctOC4wMy41Ny0xNS40NS0uMTktMTIuNTgtLjU3LTE1LjQ2LTEuMzUtNC44NS0yLjktNS45MS00LjIyLTEuNi04LjAxLTEuNi02LjU1LjU0LTguMDcsMS42LTIuNDgsMy4wNS0yLjksNS45NmMtLjQyLDIuOTItLjYyLDguMDUtLjYyLDE1LjQxcy4yMSwxMi40OC42MiwxNS40Yy40MiwyLjkyLDEuMzgsNC45LDIuOSw1Ljk2czQuMjEsMS42LDguMDcsMS42LDYuNDYtLjU0LDguMDEtMS42WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMjQ5LjAzLDc4OC40di04NC40NWg4LjA3djg0LjQ1aC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMjcxLjUzLDc4NS42OGMtMi4zNS0yLjQzLTMuNTItNi44Mi0zLjUyLTEzLjE5LDAtNC4zOS40My03LjgyLDEuMzEtMTAuMjguODctMi40NiwyLjM1LTQuMjIsNC40My01LjI4LDIuMDgtMS4wNiw1LjAyLTEuNiw4LjgxLTEuNiwyLjIsMCw3LjIuMTksMTUsLjU3di00LjA5YzAtNC43OC0uMzItOC4yMS0uOTctMTAuMjktLjY0LTIuMDgtMS44Mi0zLjQ0LTMuNTItNC4wOS0xLjctLjY1LTQuNTMtLjk3LTguNDctLjk3LTEuNzQsMC00LC4xNC02Ljc2LjQtMi43Ny4yNy01LjEuNTUtNi45OS44NnYtNi41OWM0LjkzLTEuMDYsMTAuMjctMS42LDE2LjAzLTEuNiw1LjMsMCw5LjI2LjY1LDExLjg4LDEuOTQsMi42MSwxLjI4LDQuNDEsMy40OCw1LjQsNi41OS45OSwzLjEsMS40OCw3LjY1LDEuNDgsMTMuNjR2MzYuNzFoLTcuMTZsLS40NS03Ljk2aC0uNTdjLTEuMTQsMy41Ni0yLjk3LDUuOTQtNS41MSw3LjExLTIuNTQsMS4xNy01LjUxLDEuNzYtOC45MiwxLjc2LTUuMzEsMC05LjEzLTEuMjEtMTEuNDgtMy42NFpNMjkyLjExLDc4MS40MmMxLjY2LS42NSwyLjkxLTIuMDIsMy43NS00LjE1LDEuMTQtMy4wNCwxLjcxLTcuMDksMS43MS0xMi4xN3YtMy43NWgtMTIuOTZjLTIuNDMsMC00LjIzLjI1LTUuNC43NC0xLjE4LjQ5LTIuMDEsMS40OC0yLjUsMi45NS0uNDksMS40OC0uNzQsMy43Ny0uNzQsNi44OHMuMjQsNS4xNS43NCw2LjU5Yy40OSwxLjQ0LDEuNDIsMi40NSwyLjc5LDMuMDEsMS4zNi41NywzLjQxLjg2LDYuMTQuODZzNC44MS0uMzIsNi40OC0uOTdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0zNDUuOTIsNzg2LjgyYy0yLjMxLTEuNjctMy45NC00LjU5LTQuODktOC43NS0uOTUtNC4xNy0xLjQyLTEwLjM1LTEuNDItMTguNTNzLjQ1LTE0LjI4LDEuMzYtMTguNTMsMi41Mi03LjIyLDQuODMtOC45M2MyLjMxLTEuNyw1LjctMi41NiwxMC4xNy0yLjU2LDMuNjQsMCw2LjU1LjYxLDguNzUsMS44MiwyLjIsMS4yMiwzLjgzLDMuMjYsNC44OSw2LjE0aC41N3YtMzMuNTNoOC4wN3Y4NC40NWgtNy4xNmwtLjQ1LTcuOTZoLS41N2MtMS4wNiwzLjQ5LTIuNzksNS44NC01LjE3LDcuMDUtMi4zOSwxLjIxLTUuMzIsMS44Mi04LjgxLDEuODItNC40NywwLTcuODYtLjg0LTEwLjE3LTIuNVpNMzY1LjY1LDc4MC40NWMxLjU5LTEuMDUsMi42OS0yLjgsMy4zLTUuMjMuNTMtMS45Ny44Ny00LjE4LDEuMDItNi42NS4xNS0yLjQ2LjIzLTUuODIuMjMtMTAuMDYsMC02LjQ0LS4zNC0xMC45OS0xLjAyLTEzLjY0LS42MS0yLjk1LTEuNzItNS4wMy0zLjM1LTYuMjUtMS42My0xLjIxLTMuOTYtMS44Mi02Ljk5LTEuODItMy40MSwwLTUuODcuNS03LjM5LDEuNDgtMS41Mi45OS0yLjUyLDMtMy4wMSw2LjAzLS40OSwzLjAzLS43NCw4LjA3LS43NCwxNS4xMnMuMjYsMTIuMDguNzksMTUuMTFjLjUzLDMuMDQsMS41Myw1LjA0LDMuMDEsNi4wMywxLjQ4Ljk4LDQsMS40OCw3LjU2LDEuNDgsMi44LDAsNS0uNTQsNi41OS0xLjZaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik00MjguNjIsNzYyLjA0aC0yOS43OGMwLDYuMTQuMjgsMTAuNTUuODUsMTMuMjQuNTcsMi43LDEuNzgsNC41NSwzLjY0LDUuNTcsMS44NiwxLjAyLDQuOTgsMS41NCw5LjM4LDEuNTQsNSwwLDkuNzgtLjQyLDE0LjMyLTEuMjZ2Ni41OWMtMS43NC40Ni00LjEzLjg0LTcuMTYsMS4xNC0zLjAzLjMtNS45NS40NS04Ljc1LjQ1LTYuMTQsMC0xMC42MS0uOS0xMy40MS0yLjY4LTIuOC0xLjc3LTQuNjYtNC42Ny01LjU3LTguNy0uOTEtNC4wMS0xLjM2LTEwLjE1LTEuMzYtMTguNDFzLjM4LTE0LjM4LDEuMTQtMTguMzYsMi41Mi02LjkxLDUuMjktOC44MSw3LjIyLTIuODQsMTMuMzYtMi44NGM1Ljc2LDAsOS44OS45MSwxMi4zOSwyLjczLDIuNSwxLjgyLDQuMDcsNC42Niw0LjcyLDguNTIuNjQsMy44Ny45NiwxMC4wOC45NiwxOC42NXYyLjYxWk00MDIuNyw3MzcuNzFjLTEuNTkuOS0yLjYzLDIuNjctMy4xMiw1LjI4LS40OSwyLjYyLS43NCw2Ljk2LS43NCwxMy4wMmgyMi4wNXYtMS4zN2MwLTUuNTMtLjMtOS41Ni0uOTEtMTIuMXMtMS42MS00LjItMy4wMS01Yy0xLjQtLjc5LTMuNTgtMS4xOS02LjU0LTEuMTktMy41NiwwLTYuMTQuNDUtNy43MywxLjM3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNDk5LjQzLDc4OC40bC0yNi45NC02MC4xM2gtLjQ1djYwLjEzaC04LjE4di03OC4yaDguOThsMjYuNDksNTkuMTFoLjQ1di01OS4xMWg4LjE4djc4LjJoLTguNTNaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik01NTkuMSw3NjIuMDRoLTI5Ljc4YzAsNi4xNC4yOCwxMC41NS44NSwxMy4yNC41NywyLjcsMS43OCw0LjU1LDMuNjQsNS41NywxLjg2LDEuMDIsNC45OCwxLjU0LDkuMzgsMS41NCw1LDAsOS43OC0uNDIsMTQuMzItMS4yNnY2LjU5Yy0xLjc0LjQ2LTQuMTMuODQtNy4xNiwxLjE0LTMuMDMuMy01Ljk1LjQ1LTguNzUuNDUtNi4xNCwwLTEwLjYxLS45LTEzLjQxLTIuNjgtMi44LTEuNzctNC42Ni00LjY3LTUuNTctOC43LS45MS00LjAxLTEuMzYtMTAuMTUtMS4zNi0xOC40MXMuMzgtMTQuMzgsMS4xNC0xOC4zNmMuNzYtMy45OCwyLjUyLTYuOTEsNS4yOS04LjgxczcuMjItMi44NCwxMy4zNi0yLjg0YzUuNzYsMCw5Ljg5LjkxLDEyLjM5LDIuNzMsMi41LDEuODIsNC4wNyw0LjY2LDQuNzIsOC41Mi42NCwzLjg3Ljk2LDEwLjA4Ljk2LDE4LjY1djIuNjFaTTUzMy4xOSw3MzcuNzFjLTEuNTkuOS0yLjYzLDIuNjctMy4xMiw1LjI4LS40OSwyLjYyLS43NCw2Ljk2LS43NCwxMy4wMmgyMi4wNXYtMS4zN2MwLTUuNTMtLjMtOS41Ni0uOTEtMTIuMXMtMS42MS00LjItMy4wMS01Yy0xLjQtLjc5LTMuNTgtMS4xOS02LjU0LTEuMTktMy41NiwwLTYuMTQuNDUtNy43MywxLjM3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNTcxLjk1LDgxMC4yM3YtNi41OWM1LjkxLjMsMTAuNS40NSwxMy43Ni40NSw0LjU1LDAsNy44Mi0uNTYsOS44My0xLjcsMi4wMS0xLjE0LDMuMzMtMy4xMywzLjk4LTUuOTcuNjQtMi44NC45Ni03LjQuOTYtMTMuNjl2LTEuNzFoLS41N2MtLjk5LDIuODgtMi41OCw0LjkzLTQuNzgsNi4xNHMtNS4xMSwxLjgyLTguNzUsMS44MmMtNC41NSwwLTcuOTgtLjgzLTEwLjI5LTIuNS0yLjMxLTEuNjctMy45Mi00LjU5LTQuODMtOC43NXMtMS4zNi0xMC4zLTEuMzYtMTguNDIuNDctMTQuMjYsMS40Mi0xOC40N2MuOTUtNC4yLDIuNTgtNy4xNCw0Ljg5LTguODEsMi4zMS0xLjY2LDUuNzQtMi41LDEwLjI5LTIuNSwzLjQxLDAsNi4zMS42Myw4LjcsMS44NywyLjM5LDEuMjYsNC4xMSwzLjYzLDUuMTcsNy4xMWguNTdsLjQ1LTguMDdoNy4xNnY0OS41NmMwLDguMzQtLjQ3LDE0LjYtMS40MiwxOC44MS0uOTUsNC4yLTIuOTIsNy4yOS01LjkxLDkuMjYtMi45OSwxLjk4LTcuNjcsMi45NS0xNC4wNCwyLjk1LTUuMjMsMC0xMC4zMS0uMjYtMTUuMjMtLjc5Wk01OTUuOTMsNzgwLjExYzEuNTktMS4xNCwyLjY5LTIuOTUsMy4zLTUuNDYuODMtMy4xOCwxLjI1LTguMjksMS4yNS0xNS4zNCwwLTMuNjQtLjA2LTYuNTctLjE3LTguODEtLjExLTIuMjMtLjQtNC4xNS0uODUtNS43NC0uNjgtMi44OC0xLjgyLTQuOTItMy40MS02LjE0LTEuNTktMS4yMS0zLjgzLTEuODItNi43LTEuODItMy41NiwwLTYuMDguNS03LjU2LDEuNDgtMS40OC45OS0yLjQ4LDIuOTgtMy4wMSw1Ljk3cy0uNzksOC4wMS0uNzksMTUuMDYuMjYsMTIuMDcuNzksMTUuMDdjLjUzLDIuOTksMS41Myw0Ljk4LDMuMDEsNS45NiwxLjQ4Ljk5LDQsMS40OCw3LjU2LDEuNDgsMi44LDAsNS0uNTYsNi41OS0xLjcxWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNjI3LjQ3LDc4Ni45M2MtMi42OS0xLjU5LTQuNDMtNC4zNi01LjIzLTguMy0uOC0zLjkzLTEuMTktMTAuMzQtMS4xOS0xOS4ycy40LTE1LjI3LDEuMTktMTkuMjEsMi41NC02LjcxLDUuMjMtOC4zYzIuNjktMS42LDcuMTEtMi4zOSwxMy4yNC0yLjM5czEwLjU1Ljc5LDEzLjI0LDIuMzljMi42OSwxLjU5LDQuNDEsNC4zNiw1LjE3LDguMy43NiwzLjk0LDEuMTQsMTAuMzQsMS4xNCwxOS4yMXMtLjM4LDE1LjI3LTEuMTQsMTkuMmMtLjc2LDMuOTQtMi40OCw2LjcxLTUuMTcsOC4zLTIuNjksMS42LTcuMSwyLjM5LTEzLjI0LDIuMzlzLTEwLjU1LS43OS0xMy4yNC0yLjM5Wk02NDguNzMsNzgwLjc5YzEuNTUtMS4wNiwyLjUyLTMuMDMsMi45LTUuOTFzLjU3LTguMDMuNTctMTUuNDUtLjE5LTEyLjU4LS41Ny0xNS40Ni0xLjM1LTQuODUtMi45LTUuOTEtNC4yMi0xLjYtOC4wMS0xLjYtNi41NS41NC04LjA3LDEuNi0yLjQ4LDMuMDUtMi45LDUuOTZjLS40MiwyLjkyLS42Miw4LjA1LS42MiwxNS40MXMuMjEsMTIuNDguNjIsMTUuNGMuNDIsMi45MiwxLjM4LDQuOSwyLjksNS45NnM0LjIxLDEuNiw4LjA3LDEuNiw2LjQ2LS41NCw4LjAxLTEuNlpNNjM2LjYyLDcxOS45OHYtLjU3bDYuMTQtMTUuNDVoOC41MnYuNTdsLTguNzUsMTUuNDVoLTUuOTFaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik02OTYuMDIsNzg4LjkyYy0yLjI0LjI2LTQuNDIuNC02LjU0LjQtNS42MSwwLTkuNzItLjk5LTEyLjMzLTIuOTUtMi42MS0xLjk4LTQuMy00Ljk3LTUuMDYtOC45OHMtMS4xNC0xMC4wMS0xLjE0LTE3Ljk2LjQ3LTE0LDEuNDItMTguMTNjLjk1LTQuMTQsMi43MS03LjEzLDUuMjktOC45OCwyLjU3LTEuODYsNi40NC0yLjc5LDExLjU5LTIuNzksMi4xMiwwLDQuMzIuMTQsNi41OS40LDIuMjcuMjcsNC4wOS42Myw1LjQ2LDEuMDh2Ni41OWMtMy4yNi0uNzUtNi42Ny0xLjE0LTEwLjIzLTEuMTRzLTYuMjcuNTktNy45LDEuNzZjLTEuNjMsMS4xOC0yLjczLDMuMy0zLjMsNi4zNy0uNTcsMy4wNi0uODUsNy45OC0uODUsMTQuNzJzLjI4LDExLjkuODUsMTVjLjU3LDMuMTEsMS42OCw1LjIzLDMuMzUsNi4zNywxLjY3LDEuMTQsNC4zMiwxLjcxLDcuOTYsMS43MSwzLjg3LDAsNy4zNS0uNDIsMTAuNDYtMS4yNnY2LjcxYy0xLjUyLjQ1LTMuMzkuODEtNS42MiwxLjA4WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNzEyLjQ0LDcxMy4zOXYtOS40M2g4LjUzdjkuNDNoLTguNTNaTTcxMi42Nyw3ODguNHYtNTcuOTdoOC4wN3Y1Ny45N2gtOC4wN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTczOS41NSw3ODYuOTNjLTIuNjktMS41OS00LjQzLTQuMzYtNS4yMy04LjMtLjgtMy45My0xLjE5LTEwLjM0LTEuMTktMTkuMnMuNC0xNS4yNywxLjE5LTE5LjIxLDIuNTQtNi43MSw1LjIzLTguM2MyLjY5LTEuNiw3LjExLTIuMzksMTMuMjQtMi4zOXMxMC41NS43OSwxMy4yNCwyLjM5YzIuNjksMS41OSw0LjQxLDQuMzYsNS4xNyw4LjMuNzYsMy45NCwxLjE0LDEwLjM0LDEuMTQsMTkuMjFzLS4zOCwxNS4yNy0xLjE0LDE5LjJjLS43NiwzLjk0LTIuNDgsNi43MS01LjE3LDguMy0yLjY5LDEuNi03LjEsMi4zOS0xMy4yNCwyLjM5cy0xMC41NS0uNzktMTMuMjQtMi4zOVpNNzYwLjgsNzgwLjc5YzEuNTUtMS4wNiwyLjUyLTMuMDMsMi45LTUuOTFzLjU3LTguMDMuNTctMTUuNDUtLjE5LTEyLjU4LS41Ny0xNS40Ni0xLjM1LTQuODUtMi45LTUuOTEtNC4yMi0xLjYtOC4wMS0xLjYtNi41NS41NC04LjA3LDEuNi0yLjQ4LDMuMDUtMi45LDUuOTZjLS40MiwyLjkyLS42Miw4LjA1LS42MiwxNS40MXMuMjEsMTIuNDguNjIsMTUuNGMuNDIsMi45MiwxLjM4LDQuOSwyLjksNS45NnM0LjIxLDEuNiw4LjA3LDEuNiw2LjQ2LS41NCw4LjAxLTEuNloiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTc5MC42NCw3ODguOTJjLTIuOTYtLjI3LTUuMzgtLjU5LTcuMjctLjk3di02LjdjNC44NS44Myw5Ljg1LDEuMjUsMTUsMS4yNSwyLjg4LDAsNS4wNC0uMzgsNi40OC0xLjE0LDEuNDQtLjc2LDIuMzktMS44MiwyLjg0LTMuMThzLjY4LTMuMjIuNjgtNS41N2MwLTIuODEtLjE1LTQuNzktLjQ1LTUuOTctLjMtMS4xNy0uODItMS45Ny0xLjUzLTIuMzgtLjcyLS40Mi0xLjk1LS43NC0zLjY5LS45N2wtMTEuMzctMS43MWMtMy42NC0uNTMtNi4xLTEuOTEtNy4zOS00LjE1LTEuMjktMi4yMy0xLjkzLTUuODktMS45My0xMC45NywwLTQuNTUuNzItOC4wNSwyLjE2LTEwLjUxczMuNDMtNC4xNSw1Ljk3LTUuMDZjMi41NC0uOSw1LjgxLTEuMzcsOS44My0xLjM3LDIuMzUsMCw0Ljg1LjE2LDcuNS40NiwyLjY1LjMsNC43Ny42Nyw2LjM3LDEuMTR2Ni41OWMtMS43NC0uMzgtMy44OC0uNy02LjQyLS45N3MtNS4wMi0uNC03LjQ1LS40Yy0zLjU2LDAtNi4xNC42NS03LjczLDEuOTMtMS41OSwxLjI5LTIuMzksMy44My0yLjM5LDcuNjIsMCwyLjUuMTUsNC4zNC40NSw1LjUxLjMsMS4xOC44MSwxLjk5LDEuNTMsMi40NS43Mi40NSwxLjkxLjc5LDMuNTgsMS4wMmwxMS4wMiwxLjQ4YzIuNDMuMyw0LjM0LjkzLDUuNzQsMS44NywxLjQuOTUsMi40NCwyLjUyLDMuMTIsNC43Mi42OCwyLjIsMS4wMiw1LjM1LDEuMDIsOS40MywwLDYuMzctMS4zNiwxMC43OC00LjA5LDEzLjI1LTIuNzMsMi40Ni03LjE2LDMuNjktMTMuMywzLjY5LTIuNTgsMC01LjM0LS4xNC04LjMtLjRaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik04ODUuNTUsNzYyLjA0aC0yOS43OGMwLDYuMTQuMjgsMTAuNTUuODUsMTMuMjQuNTcsMi43LDEuNzgsNC41NSwzLjY0LDUuNTcsMS44NiwxLjAyLDQuOTgsMS41NCw5LjM4LDEuNTQsNSwwLDkuNzgtLjQyLDE0LjMyLTEuMjZ2Ni41OWMtMS43NC40Ni00LjEzLjg0LTcuMTYsMS4xNC0zLjAzLjMtNS45NS40NS04Ljc1LjQ1LTYuMTQsMC0xMC42MS0uOS0xMy40MS0yLjY4LTIuOC0xLjc3LTQuNjYtNC42Ny01LjU3LTguNy0uOTEtNC4wMS0xLjM2LTEwLjE1LTEuMzYtMTguNDFzLjM4LTE0LjM4LDEuMTQtMTguMzYsMi41Mi02LjkxLDUuMjktOC44MSw3LjIyLTIuODQsMTMuMzYtMi44NGM1Ljc2LDAsOS44OS45MSwxMi4zOSwyLjczLDIuNSwxLjgyLDQuMDcsNC42Niw0LjcyLDguNTIuNjQsMy44Ny45NiwxMC4wOC45NiwxOC42NXYyLjYxWk04NTkuNjQsNzM3LjcxYy0xLjU5LjktMi42MywyLjY3LTMuMTIsNS4yOC0uNDksMi42Mi0uNzQsNi45Ni0uNzQsMTMuMDJoMjIuMDV2LTEuMzdjMC01LjUzLS4zLTkuNTYtLjkxLTEyLjFzLTEuNjEtNC4yLTMuMDEtNWMtMS40LS43OS0zLjU4LTEuMTktNi41NC0xLjE5LTMuNTYsMC02LjE0LjQ1LTcuNzMsMS4zN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTkyMC43OSw3MTAuMmgxOC42NGM3LjU4LDAsMTIuOTguOTksMTYuMiwyLjk1LDMuMjIsMS45OCw1LjMsNS41MSw2LjI1LDEwLjYzLjk1LDUuMTIsMS40MiwxMy42MywxLjQyLDI1LjUzcy0uNDcsMjAuNC0xLjQyLDI1LjUyYy0uOTUsNS4xMS0zLjAzLDguNjYtNi4yNSwxMC42My0zLjIyLDEuOTgtOC42MiwyLjk1LTE2LjIsMi45NWgtMTguNjR2LTc4LjJaTTkzOS4wOSw3ODAuOTFjNS4yMywwLDguODEtLjU1LDEwLjc0LTEuNjVzMy4yNC0zLjY5LDMuOTItNy43OGMuNjgtNC4xLDEuMDItMTEuNDgsMS4wMi0yMi4xN3MtLjM0LTE3Ljk4LTEuMDItMjIuMTFjLS42OC00LjEzLTIuMDEtNi43NS0zLjk4LTcuODUtMS45Ny0xLjEtNS41My0xLjY0LTEwLjY4LTEuNjRoLTkuODl2NjMuMmg5Ljg5WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTAxMi41Miw3NjIuMDRoLTI5Ljc4YzAsNi4xNC4yOCwxMC41NS44NSwxMy4yNC41NywyLjcsMS43OCw0LjU1LDMuNjQsNS41NywxLjg2LDEuMDIsNC45OSwxLjU0LDkuMzgsMS41NCw1LDAsOS43OC0uNDIsMTQuMzItMS4yNnY2LjU5Yy0xLjc0LjQ2LTQuMTMuODQtNy4xNiwxLjE0LTMuMDMuMy01Ljk1LjQ1LTguNzUuNDUtNi4xMywwLTEwLjYxLS45LTEzLjQxLTIuNjgtMi44MS0xLjc3LTQuNjYtNC42Ny01LjU3LTguNy0uOTEtNC4wMS0xLjM3LTEwLjE1LTEuMzctMTguNDFzLjM4LTE0LjM4LDEuMTQtMTguMzZjLjc2LTMuOTgsMi41Mi02LjkxLDUuMjktOC44MSwyLjc2LTEuODksNy4yMS0yLjg0LDEzLjM1LTIuODQsNS43NiwwLDkuODkuOTEsMTIuMzksMi43MywyLjUsMS44Miw0LjA4LDQuNjYsNC43Miw4LjUyLjY1LDMuODcuOTcsMTAuMDguOTcsMTguNjV2Mi42MVpNOTg2LjYsNzM3LjcxYy0xLjU5LjktMi42NCwyLjY3LTMuMTIsNS4yOC0uNDksMi42Mi0uNzQsNi45Ni0uNzQsMTMuMDJoMjIuMDV2LTEuMzdjMC01LjUzLS4zLTkuNTYtLjkxLTEyLjFzLTEuNjEtNC4yLTMuMDEtNWMtMS40LS43OS0zLjU4LTEuMTktNi41NC0xLjE5LTMuNTYsMC02LjE0LjQ1LTcuNzMsMS4zN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTEwMzAuOTIsNzg4LjkyYy0yLjk1LS4yNy01LjM4LS41OS03LjI3LS45N3YtNi43YzQuODUuODMsOS44NSwxLjI1LDE1LjAxLDEuMjUsMi44OCwwLDUuMDQtLjM4LDYuNDgtMS4xNHMyLjM5LTEuODIsMi44NC0zLjE4Yy40Ni0xLjM3LjY4LTMuMjIuNjgtNS41NywwLTIuODEtLjE1LTQuNzktLjQ2LTUuOTctLjMtMS4xNy0uODEtMS45Ny0xLjUzLTIuMzhzLTEuOTUtLjc0LTMuNjktLjk3bC0xMS4zNy0xLjcxYy0zLjY0LS41My02LjEtMS45MS03LjM5LTQuMTVzLTEuOTMtNS44OS0xLjkzLTEwLjk3YzAtNC41NS43Mi04LjA1LDIuMTYtMTAuNTEsMS40NC0yLjQ2LDMuNDItNC4xNSw1Ljk2LTUuMDYsMi41NC0uOSw1LjgyLTEuMzcsOS44NC0xLjM3LDIuMzQsMCw0Ljg1LjE2LDcuNS40NiwyLjY1LjMsNC43Ny42Nyw2LjM3LDEuMTR2Ni41OWMtMS43NC0uMzgtMy44OS0uNy02LjQyLS45Ny0yLjU0LS4yNy01LjAyLS40LTcuNDUtLjQtMy41NiwwLTYuMTQuNjUtNy43MywxLjkzLTEuNTksMS4yOS0yLjM5LDMuODMtMi4zOSw3LjYyLDAsMi41LjE1LDQuMzQuNDUsNS41MS4zLDEuMTguODIsMS45OSwxLjU0LDIuNDVzMS45MS43OSwzLjU4LDEuMDJsMTEuMDIsMS40OGMyLjQyLjMsNC4zNC45Myw1Ljc0LDEuODcsMS40Ljk1LDIuNDQsMi41MiwzLjEyLDQuNzJzMS4wMiw1LjM1LDEuMDIsOS40M2MwLDYuMzctMS4zNywxMC43OC00LjA5LDEzLjI1LTIuNzMsMi40Ni03LjE2LDMuNjktMTMuMywzLjY5LTIuNTgsMC01LjM0LS4xNC04LjMtLjRaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMTA0LjAyLDc2Mi4wNGgtMjkuNzhjMCw2LjE0LjI4LDEwLjU1Ljg1LDEzLjI0LjU3LDIuNywxLjc4LDQuNTUsMy42NCw1LjU3LDEuODYsMS4wMiw0Ljk5LDEuNTQsOS4zOCwxLjU0LDUsMCw5Ljc4LS40MiwxNC4zMi0xLjI2djYuNTljLTEuNzQuNDYtNC4xMy44NC03LjE2LDEuMTQtMy4wMy4zLTUuOTUuNDUtOC43NS40NS02LjEzLDAtMTAuNjEtLjktMTMuNDEtMi42OC0yLjgxLTEuNzctNC42Ni00LjY3LTUuNTctOC43LS45MS00LjAxLTEuMzctMTAuMTUtMS4zNy0xOC40MXMuMzgtMTQuMzgsMS4xNC0xOC4zNmMuNzYtMy45OCwyLjUyLTYuOTEsNS4yOS04LjgxLDIuNzYtMS44OSw3LjIxLTIuODQsMTMuMzUtMi44NCw1Ljc2LDAsOS44OS45MSwxMi4zOSwyLjczLDIuNSwxLjgyLDQuMDgsNC42Niw0LjcyLDguNTIuNjUsMy44Ny45NywxMC4wOC45NywxOC42NXYyLjYxWk0xMDc4LjEsNzM3LjcxYy0xLjU5LjktMi42NCwyLjY3LTMuMTIsNS4yOC0uNDksMi42Mi0uNzQsNi45Ni0uNzQsMTMuMDJoMjIuMDV2LTEuMzdjMC01LjUzLS4zLTkuNTYtLjkxLTEyLjFzLTEuNjEtNC4yLTMuMDEtNWMtMS40LS43OS0zLjU4LTEuMTktNi41NC0xLjE5LTMuNTYsMC02LjE0LjQ1LTcuNzMsMS4zN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTExNDYuMDcsNzU0LjUzYzAtNS40Ni0uMjQtOS4zOC0uNzQtMTEuNzYtLjQ5LTIuMzktMS40Mi0zLjk4LTIuNzgtNC43Ny0xLjM3LS44LTMuNi0xLjItNi43MS0xLjItMy40OCwwLTYuMDIuODQtNy42MiwyLjUtMS41OSwxLjY3LTIuNTgsMy45MS0yLjk1LDYuNzEtLjM4LDIuOC0uNTcsNi45LS41NywxMi4yN3YzMC4xMmgtOC4wN3YtNTcuOTdoNy4wNWwuNDYsOC4wN2guNjhjLjkxLTIuODgsMi40OC01LjEsNC43Mi02LjY1czUuNDQtMi4zNCw5LjYxLTIuMzQsNy40NS43Niw5LjYxLDIuMjhjMi4xNiwxLjUxLDMuNiwzLjgsNC4zMiw2Ljg3LjcyLDMuMDcsMS4wOCw3LjQ1LDEuMDgsMTMuMTR2MzYuNTloLTguMDd2LTMzLjg3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTE3OS4wMyw3ODguNGwtMTUuOTEtNTcuOTdoOC40MWwxMi4yOCw0Ny43NGguNjhsMTIuMTYtNDcuNzRoOC4xOGwtMTUuOTEsNTcuOTdoLTkuODlaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMjE3LjYyLDc4Ni45M2MtMi42OS0xLjU5LTQuNDQtNC4zNi01LjIzLTguMy0uNzktMy45My0xLjItMTAuMzQtMS4yLTE5LjJzLjQtMTUuMjcsMS4yLTE5LjIxLDIuNTQtNi43MSw1LjIzLTguM2MyLjY5LTEuNiw3LjEtMi4zOSwxMy4yNC0yLjM5czEwLjU1Ljc5LDEzLjI0LDIuMzljMi42OSwxLjU5LDQuNDIsNC4zNiw1LjE3LDguM3MxLjE0LDEwLjM0LDEuMTQsMTkuMjEtLjM4LDE1LjI3LTEuMTQsMTkuMmMtLjc2LDMuOTQtMi40OCw2LjcxLTUuMTcsOC4zLTIuNjksMS42LTcuMSwyLjM5LTEzLjI0LDIuMzlzLTEwLjU2LS43OS0xMy4yNC0yLjM5Wk0xMjM4Ljg4LDc4MC43OWMxLjU1LTEuMDYsMi41Mi0zLjAzLDIuOS01LjkxLjM4LTIuODguNTctOC4wMy41Ny0xNS40NXMtLjE5LTEyLjU4LS41Ny0xNS40NmMtLjM4LTIuODgtMS4zNS00Ljg1LTIuOS01LjkxLTEuNTYtMS4wNi00LjIzLTEuNi04LjAxLTEuNnMtNi41Ni41NC04LjA3LDEuNi0yLjQ4LDMuMDUtMi45LDUuOTYtLjYyLDguMDUtLjYyLDE1LjQxLjIxLDEyLjQ4LjYyLDE1LjQsMS4zOCw0LjksMi45LDUuOTYsNC4yMSwxLjYsOC4wNywxLjYsNi40Ni0uNTQsOC4wMS0xLjZaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMjYyLjkyLDc4OC40di04NC40NWg4LjA3djg0LjQ1aC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTI5Ni4xLDc4OC40bC0xNS45MS01Ny45N2g4LjQxbDEyLjI4LDQ3Ljc0aC42OGwxMi4xNi00Ny43NGg4LjE4bC0xNS45MSw1Ny45N2gtOS44OVoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTEzMzEuMDEsNzEzLjM5di05LjQzaDguNTN2OS40M2gtOC41M1pNMTMzMS4yMyw3ODguNHYtNTcuOTdoOC4wN3Y1Ny45N2gtOC4wN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE0MDkuNzcsNzU0LjUzYzAtNS40Ni0uMjMtOS4zOC0uNjgtMTEuNzYtLjQ1LTIuMzktMS4yOS0zLjk4LTIuNS00Ljc3LTEuMjEtLjgtMy4yNi0xLjItNi4xMy0xLjItMy4zNCwwLTUuNzguNzgtNy4zMywyLjM0LTEuNTUsMS41NS0yLjUyLDMuNzMtMi45LDYuNTQtLjM4LDIuOC0uNTcsNy4wMS0uNTcsMTIuNjF2MzAuMTJoLTguMDd2LTMzLjg3YzAtNS41My0uMjEtOS40Ny0uNjMtMTEuODItLjQyLTIuMzUtMS4yMy0zLjkyLTIuNDQtNC43Mi0xLjIxLS44LTMuMjYtMS4yLTYuMTQtMS4yLTMuMzMsMC01Ljc4LjgyLTcuMzMsMi40NS0xLjU2LDEuNjMtMi41MiwzLjg3LTIuOSw2LjctLjM4LDIuODQtLjU3LDYuOTYtLjU3LDEyLjMzdjMwLjEyaC04LjA3di01Ny45N2g3LjA1bC40Niw4LjA3aC42OGMuOTEtMi44MSwyLjQtNSw0LjQ5LTYuNTksMi4wOC0xLjYsNS4xMy0yLjM5LDkuMTUtMi4zOXM3LjI2LjY4LDkuMjYsMi4wNSwzLjM5LDMuNjcsNC4xNSw2LjkzaC42OGMuOTEtMi44OCwyLjQ2LTUuMSw0LjY2LTYuNjUsMi4yLTEuNTUsNS4zLTIuMzQsOS4zMi0yLjM0czcuMTYuNzQsOS4yMSwyLjIyYzIuMDQsMS40OCwzLjQyLDMuNzgsNC4xNSw2Ljg4LjcyLDMuMTEsMS4wOCw3LjQ3LDEuMDgsMTMuMDd2MzYuNzFoLTguMDd2LTMzLjg3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTQ2Ny44Niw3NjIuMDRoLTI5Ljc4YzAsNi4xNC4yOCwxMC41NS44NSwxMy4yNC41NywyLjcsMS43OCw0LjU1LDMuNjQsNS41NywxLjg2LDEuMDIsNC45OSwxLjU0LDkuMzgsMS41NCw1LDAsOS43OC0uNDIsMTQuMzItMS4yNnY2LjU5Yy0xLjc0LjQ2LTQuMTMuODQtNy4xNiwxLjE0LTMuMDMuMy01Ljk1LjQ1LTguNzUuNDUtNi4xMywwLTEwLjYxLS45LTEzLjQxLTIuNjgtMi44MS0xLjc3LTQuNjYtNC42Ny01LjU3LTguNy0uOTEtNC4wMS0xLjM3LTEwLjE1LTEuMzctMTguNDFzLjM4LTE0LjM4LDEuMTQtMTguMzZjLjc2LTMuOTgsMi41Mi02LjkxLDUuMjktOC44MSwyLjc2LTEuODksNy4yMS0yLjg0LDEzLjM1LTIuODQsNS43NiwwLDkuODkuOTEsMTIuMzksMi43MywyLjUsMS44Miw0LjA4LDQuNjYsNC43Miw4LjUyLjY1LDMuODcuOTcsMTAuMDguOTcsMTguNjV2Mi42MVpNMTQ0MS45NCw3MzcuNzFjLTEuNTkuOS0yLjY0LDIuNjctMy4xMiw1LjI4LS40OSwyLjYyLS43NCw2Ljk2LS43NCwxMy4wMmgyMi4wNXYtMS4zN2MwLTUuNTMtLjMtOS41Ni0uOTEtMTIuMXMtMS42MS00LjItMy4wMS01Yy0xLjQtLjc5LTMuNTgtMS4xOS02LjU0LTEuMTktMy41NiwwLTYuMTQuNDUtNy43MywxLjM3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTUwOS45MSw3NTQuNTNjMC01LjQ2LS4yNC05LjM4LS43NC0xMS43Ni0uNDktMi4zOS0xLjQyLTMuOTgtMi43OC00Ljc3LTEuMzctLjgtMy42LTEuMi02LjcxLTEuMi0zLjQ4LDAtNi4wMi44NC03LjYyLDIuNS0xLjU5LDEuNjctMi41OCwzLjkxLTIuOTUsNi43MS0uMzgsMi44LS41Nyw2LjktLjU3LDEyLjI3djMwLjEyaC04LjA3di01Ny45N2g3LjA1bC40Niw4LjA3aC42OGMuOTEtMi44OCwyLjQ4LTUuMSw0LjcyLTYuNjVzNS40NC0yLjM0LDkuNjEtMi4zNCw3LjQ1Ljc2LDkuNjEsMi4yOGMyLjE2LDEuNTEsMy42LDMuOCw0LjMyLDYuODcuNzIsMy4wNywxLjA4LDcuNDUsMS4wOCwxMy4xNHYzNi41OWgtOC4wN3YtMzMuODdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNTM1LjQ5LDc4OC40di01MS4wM2gtOC40MXYtNi45M2g4LjQxdi0xNi44Mmg4LjA3djE2LjgyaDEwdjYuOTNoLTEwdjUxLjAzaC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTU2Ny4wMyw3ODYuOTNjLTIuNjktMS41OS00LjQ0LTQuMzYtNS4yMy04LjMtLjc5LTMuOTMtMS4yLTEwLjM0LTEuMi0xOS4ycy40LTE1LjI3LDEuMi0xOS4yMSwyLjU0LTYuNzEsNS4yMy04LjNjMi42OS0xLjYsNy4xLTIuMzksMTMuMjQtMi4zOXMxMC41NS43OSwxMy4yNCwyLjM5YzIuNjksMS41OSw0LjQyLDQuMzYsNS4xNyw4LjNzMS4xNCwxMC4zNCwxLjE0LDE5LjIxLS4zOCwxNS4yNy0xLjE0LDE5LjJjLS43NiwzLjk0LTIuNDgsNi43MS01LjE3LDguMy0yLjY5LDEuNi03LjEsMi4zOS0xMy4yNCwyLjM5cy0xMC41Ni0uNzktMTMuMjQtMi4zOVpNMTU4OC4yOSw3ODAuNzljMS41NS0xLjA2LDIuNTItMy4wMywyLjktNS45MS4zOC0yLjg4LjU3LTguMDMuNTctMTUuNDVzLS4xOS0xMi41OC0uNTctMTUuNDZjLS4zOC0yLjg4LTEuMzUtNC44NS0yLjktNS45MS0xLjU2LTEuMDYtNC4yMy0xLjYtOC4wMS0xLjZzLTYuNTYuNTQtOC4wNywxLjYtMi40OCwzLjA1LTIuOSw1Ljk2LS42Miw4LjA1LS42MiwxNS40MS4yMSwxMi40OC42MiwxNS40LDEuMzgsNC45LDIuOSw1Ljk2LDQuMjEsMS42LDguMDcsMS42LDYuNDYtLjU0LDguMDEtMS42WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTYzMy4xMyw3ODcuODR2LTcuMzljMi42NS4zOSw1LjU3LjcsOC43NS45NywzLjE4LjI3LDUuODcuNCw4LjA3LjQsMy4wMywwLDUuNDQtLjIsNy4yMi0uNjMsMS43OC0uNDIsMy4yNC0xLjE1LDQuMzgtMi4yMiwxLjA2LS45OCwxLjc2LTIuNDIsMi4xLTQuMzIuMzQtMS44OS41MS00LjQzLjUxLTcuNjIsMC00LjE2LS4xNS03LjA4LS40NS04Ljc1LS4zLTEuNjYtMS4wMS0yLjg1LTIuMS0zLjU3cy0zLjA1LTEuMzEtNS44NS0xLjc2bC0xMy4xOC0yLjA1Yy0zLjE4LS41My01LjU3LTEuNjEtNy4xNi0zLjI0LTEuNTktMS42Mi0yLjYzLTMuNzMtMy4xMi02LjMxcy0uNzQtNi4wMy0uNzQtMTAuMzVjMC03Ljg3LDEuNjctMTMuNDcsNS0xNi43NiwzLjMzLTMuMyw4LjY3LTQuOTQsMTYuMDMtNC45NHMxMi44LjYsMTcuMjgsMS44MnY3LjA0Yy01LjA4LS45LTEwLjE5LTEuMzctMTUuMzUtMS4zNy0zLjI2LDAtNS44My4yOS03LjczLjg2LTEuOS41Ni0zLjM0LDEuNDItNC4zMiwyLjU2LS45OSwxLjE0LTEuNjMsMi41NC0xLjkzLDQuMi0uMywxLjY3LS40NSwzLjc5LS40NSw2LjM3LDAsMy40OC4xNSw2LC40NSw3LjU2LjMsMS41NS45MSwyLjYzLDEuODIsMy4yMy45MS42MSwyLjQzLDEuMTEsNC41NSwxLjQ4bDEyLjczLDIuMDVjMy4xOC41NCw1LjY5LDEuMzMsNy41MSwyLjM5czMuMjIsMi44OCw0LjIxLDUuNDZjLjkxLDIuMiwxLjM2LDYuNTUsMS4zNiwxMy4wNywwLDUuODMtLjYyLDEwLjQxLTEuODcsMTMuNzUtMS4yNSwzLjM0LTMuMzQsNS43Ni02LjI1LDcuMjctMi45MiwxLjUyLTYuOTIsMi4yOC0xMS45OSwyLjI4LTcuMDUsMC0xMy41My0uNS0xOS40NC0xLjQ4WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTY4OS4xMSw3ODYuOTNjLTIuNjktMS41OS00LjQ0LTQuMzYtNS4yMy04LjMtLjc5LTMuOTMtMS4yLTEwLjM0LTEuMi0xOS4ycy40LTE1LjI3LDEuMi0xOS4yMSwyLjU0LTYuNzEsNS4yMy04LjNjMi42OS0xLjYsNy4xLTIuMzksMTMuMjQtMi4zOXMxMC41NS43OSwxMy4yNCwyLjM5YzIuNjksMS41OSw0LjQyLDQuMzYsNS4xNyw4LjMuNzYsMy45NCwxLjE0LDEwLjM0LDEuMTQsMTkuMjFzLS4zOCwxNS4yNy0xLjE0LDE5LjJjLS43NiwzLjk0LTIuNDgsNi43MS01LjE3LDguMy0yLjY5LDEuNi03LjEsMi4zOS0xMy4yNCwyLjM5cy0xMC41Ni0uNzktMTMuMjQtMi4zOVpNMTcxMC4zNiw3ODAuNzljMS41NS0xLjA2LDIuNTItMy4wMywyLjktNS45MS4zOC0yLjg4LjU3LTguMDMuNTctMTUuNDVzLS4xOS0xMi41OC0uNTctMTUuNDZjLS4zOC0yLjg4LTEuMzUtNC44NS0yLjktNS45MS0xLjU2LTEuMDYtNC4yMy0xLjYtOC4wMS0xLjZzLTYuNTYuNTQtOC4wNywxLjYtMi40OCwzLjA1LTIuOSw1Ljk2LS42Miw4LjA1LS42MiwxNS40MS4yMSwxMi40OC42MiwxNS40LDEuMzgsNC45LDIuOSw1Ljk2YzEuNTEsMS4wNiw0LjIxLDEuNiw4LjA3LDEuNnM2LjQ2LS41NCw4LjAxLTEuNloiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE3NTcuNjQsNzg4LjkyYy0yLjIzLjI2LTQuNDEuNC02LjU0LjQtNS42MSwwLTkuNzItLjk5LTEyLjMzLTIuOTUtMi42MS0xLjk4LTQuMy00Ljk3LTUuMDUtOC45OC0uNzYtNC4wMi0xLjE0LTEwLjAxLTEuMTQtMTcuOTZzLjQ4LTE0LDEuNDItMTguMTNjLjk1LTQuMTQsMi43MS03LjEzLDUuMjktOC45OHM2LjQ0LTIuNzksMTEuNTktMi43OWMyLjEyLDAsNC4zMi4xNCw2LjU5LjQsMi4yOC4yNyw0LjA5LjYzLDUuNDYsMS4wOHY2LjU5Yy0zLjI2LS43NS02LjY3LTEuMTQtMTAuMjMtMS4xNHMtNi4yNy41OS03LjksMS43NmMtMS42MywxLjE4LTIuNzMsMy4zLTMuMyw2LjM3LS41NywzLjA2LS44NSw3Ljk4LS44NSwxNC43MnMuMjgsMTEuOS44NSwxNWMuNTcsMy4xMSwxLjY5LDUuMjMsMy4zNiw2LjM3czQuMzIsMS43MSw3Ljk2LDEuNzFjMy44NiwwLDcuMzUtLjQyLDEwLjQ1LTEuMjZ2Ni43MWMtMS41MS40NS0zLjM5LjgxLTUuNjMsMS4wOFoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE3NzQuMDcsNzEzLjM5di05LjQzaDguNTN2OS40M2gtOC41M1pNMTc3NC4zLDc4OC40di01Ny45N2g4LjA3djU3Ljk3aC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTc5Ni44LDc4NS42OGMtMi4zNS0yLjQzLTMuNTMtNi44Mi0zLjUzLTEzLjE5LDAtNC4zOS40NC03LjgyLDEuMzEtMTAuMjguODctMi40NiwyLjM1LTQuMjIsNC40NC01LjI4LDIuMDgtMS4wNiw1LjAyLTEuNiw4LjgxLTEuNiwyLjIsMCw3LjIuMTksMTUuMDEuNTd2LTQuMDljMC00Ljc4LS4zMi04LjIxLS45Ni0xMC4yOS0uNjUtMi4wOC0xLjgyLTMuNDQtMy41My00LjA5LTEuNy0uNjUtNC41My0uOTctOC40Ny0uOTctMS43NCwwLTQsLjE0LTYuNzcuNC0yLjc2LjI3LTUuMS41NS02Ljk5Ljg2di02LjU5YzQuOTMtMS4wNiwxMC4yNy0xLjYsMTYuMDMtMS42LDUuMywwLDkuMjYuNjUsMTEuODgsMS45NCwyLjYyLDEuMjgsNC40MiwzLjQ4LDUuNCw2LjU5Ljk4LDMuMSwxLjQ4LDcuNjUsMS40OCwxMy42NHYzNi43MWgtNy4xNmwtLjQ2LTcuOTZoLS41N2MtMS4xNCwzLjU2LTIuOTcsNS45NC01LjUxLDcuMTFzLTUuNTEsMS43Ni04LjkyLDEuNzZjLTUuMzEsMC05LjEzLTEuMjEtMTEuNDgtMy42NFpNMTgxNy4zOCw3ODEuNDJjMS42Ny0uNjUsMi45Mi0yLjAyLDMuNzUtNC4xNSwxLjE0LTMuMDQsMS43MS03LjA5LDEuNzEtMTIuMTd2LTMuNzVoLTEyLjk2Yy0yLjQzLDAtNC4yMy4yNS01LjQuNzQtMS4xOC40OS0yLjAxLDEuNDgtMi41LDIuOTVzLS43NCwzLjc3LS43NCw2Ljg4LjI0LDUuMTUuNzQsNi41OSwxLjQyLDIuNDUsMi43OCwzLjAxYzEuMzcuNTcsMy40MS44Niw2LjE0Ljg2czQuODEtLjMyLDYuNDgtLjk3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTg0NC44OCw3ODguNHYtODQuNDVoOC4wN3Y4NC40NWgtOC4wN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTcxLjY1LDkxNC40NGMtMi4zMS0xLjY3LTMuOTQtNC41OS00Ljg5LTguNzUtLjk1LTQuMTctMS40Mi0xMC4zNS0xLjQyLTE4LjUzcy40NS0xNC4yOCwxLjM2LTE4LjUzLDIuNTItNy4yMiw0LjgzLTguOTNjMi4zMS0xLjcsNS43LTIuNTYsMTAuMTctMi41NiwzLjY0LDAsNi41NS42MSw4Ljc1LDEuODIsMi4yLDEuMjIsMy44MywzLjI2LDQuODksNi4xNGguNTd2LTMzLjUzaDguMDd2ODQuNDVoLTcuMTZsLS40NS03Ljk2aC0uNTdjLTEuMDYsMy40OS0yLjc5LDUuODQtNS4xNyw3LjA1cy01LjMyLDEuODItOC44MSwxLjgyYy00LjQ3LDAtNy44Ni0uODQtMTAuMTctMi41Wk05MS4zNyw5MDguMDdjMS41OS0xLjA1LDIuNjktMi44LDMuMy01LjIzLjUzLTEuOTcuODctNC4xOCwxLjAyLTYuNjUuMTUtMi40Ni4yMy01LjgyLjIzLTEwLjA2LDAtNi40NC0uMzQtMTAuOTktMS4wMi0xMy42NC0uNjEtMi45NS0xLjcyLTUuMDMtMy4zNS02LjI1LTEuNjMtMS4yMS0zLjk2LTEuODItNi45OS0xLjgyLTMuNDEsMC01Ljg3LjUtNy4zOSwxLjQ4LTEuNTIuOTktMi41MiwzLTMuMDEsNi4wMy0uNDksMy4wMy0uNzQsOC4wNy0uNzQsMTUuMTJzLjI2LDEyLjA4Ljc5LDE1LjExYy41MywzLjA0LDEuNTMsNS4wNCwzLjAxLDYuMDMsMS40OC45OCw0LDEuNDgsNy41NiwxLjQ4LDIuOCwwLDUtLjU0LDYuNTktMS42WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTIyLjkxLDkxNC41NWMtMi42OS0xLjU5LTQuNDMtNC4zNi01LjIzLTguMy0uOC0zLjkzLTEuMTktMTAuMzQtMS4xOS0xOS4ycy40LTE1LjI3LDEuMTktMTkuMjEsMi41NC02LjcxLDUuMjMtOC4zYzIuNjktMS42LDcuMTEtMi4zOSwxMy4yNC0yLjM5czEwLjU1Ljc5LDEzLjI0LDIuMzljMi42OSwxLjU5LDQuNDEsNC4zNiw1LjE3LDguMy43NiwzLjk0LDEuMTQsMTAuMzQsMS4xNCwxOS4yMXMtLjM4LDE1LjI3LTEuMTQsMTkuMmMtLjc2LDMuOTQtMi40OCw2LjcxLTUuMTcsOC4zLTIuNjksMS42LTcuMSwyLjM5LTEzLjI0LDIuMzlzLTEwLjU1LS43OS0xMy4yNC0yLjM5Wk0xNDQuMTcsOTA4LjQxYzEuNTUtMS4wNiwyLjUyLTMuMDMsMi45LTUuOTFzLjU3LTguMDMuNTctMTUuNDUtLjE5LTEyLjU4LS41Ny0xNS40Ni0xLjM1LTQuODUtMi45LTUuOTEtNC4yMi0xLjYtOC4wMS0xLjYtNi41NS41NC04LjA3LDEuNi0yLjQ4LDMuMDUtMi45LDUuOTZjLS40MiwyLjkyLS42Miw4LjA1LS42MiwxNS40MXMuMjEsMTIuNDguNjIsMTUuNGMuNDIsMi45MiwxLjM4LDQuOSwyLjksNS45NnM0LjIxLDEuNiw4LjA3LDEuNiw2LjQ2LS41NCw4LjAxLTEuNloiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE5MS4xNyw5MTYuMDJ2LTc4LjJoOC41M3Y3OC4yaC04LjUzWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMjQ0LjQ4LDg4Mi4xNWMwLTUuNDYtLjI1LTkuMzgtLjc0LTExLjc2LS40OS0yLjM5LTEuNDItMy45OC0yLjc5LTQuNzctMS4zNi0uOC0zLjYtMS4yLTYuNzEtMS4yLTMuNDgsMC02LjAyLjg0LTcuNjIsMi41LTEuNTksMS42Ny0yLjU4LDMuOTEtMi45NSw2LjcxLS4zOCwyLjgtLjU3LDYuOS0uNTcsMTIuMjd2MzAuMTJoLTguMDd2LTU3Ljk3aDcuMDVsLjQ1LDguMDdoLjY4Yy45MS0yLjg4LDIuNDgtNS4xLDQuNzItNi42NSwyLjIzLTEuNTUsNS40NC0yLjM0LDkuNi0yLjM0czcuNDUuNzYsOS42MSwyLjI4YzIuMTYsMS41MSwzLjYsMy44LDQuMzIsNi44Ny43MiwzLjA3LDEuMDgsNy40NSwxLjA4LDEzLjE0djM2LjU5aC04LjA3di0zMy44N1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTI3Mi4zMiw5MTYuNTRjLTIuOTYtLjI3LTUuMzgtLjU5LTcuMjctLjk3di02LjdjNC44NS44Myw5Ljg1LDEuMjUsMTUsMS4yNSwyLjg4LDAsNS4wNC0uMzgsNi40OC0xLjE0LDEuNDQtLjc2LDIuMzktMS44MiwyLjg0LTMuMThzLjY4LTMuMjIuNjgtNS41N2MwLTIuODEtLjE1LTQuNzktLjQ1LTUuOTctLjMtMS4xNy0uODItMS45Ny0xLjUzLTIuMzgtLjcyLS40Mi0xLjk1LS43NC0zLjY5LS45N2wtMTEuMzctMS43MWMtMy42NC0uNTMtNi4xLTEuOTEtNy4zOS00LjE1LTEuMjktMi4yMy0xLjkzLTUuODktMS45My0xMC45NywwLTQuNTUuNzItOC4wNSwyLjE2LTEwLjUxczMuNDMtNC4xNSw1Ljk3LTUuMDZjMi41NC0uOSw1LjgxLTEuMzcsOS44My0xLjM3LDIuMzUsMCw0Ljg1LjE2LDcuNS40NiwyLjY1LjMsNC43Ny42Nyw2LjM3LDEuMTR2Ni41OWMtMS43NC0uMzgtMy44OC0uNy02LjQyLS45N3MtNS4wMi0uNC03LjQ1LS40Yy0zLjU2LDAtNi4xNC42NS03LjczLDEuOTMtMS41OSwxLjI5LTIuMzksMy44My0yLjM5LDcuNjIsMCwyLjUuMTUsNC4zNC40NSw1LjUxLjMsMS4xOC44MSwxLjk5LDEuNTMsMi40NS43Mi40NSwxLjkxLjc5LDMuNTgsMS4wMmwxMS4wMiwxLjQ4YzIuNDMuMyw0LjM0LjkzLDUuNzQsMS44NywxLjQuOTUsMi40NCwyLjUyLDMuMTIsNC43Mi42OCwyLjIsMS4wMiw1LjM1LDEuMDIsOS40MywwLDYuMzctMS4zNiwxMC43OC00LjA5LDEzLjI1LTIuNzMsMi40Ni03LjE2LDMuNjktMTMuMywzLjY5LTIuNTgsMC01LjM0LS4xNC04LjMtLjRaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0zMTIuMzQsOTE2LjAydi01MS4wM2gtOC40MXYtNi45M2g4LjQxdi0xNi44Mmg4LjA3djE2LjgyaDEwdjYuOTNoLTEwdjUxLjAzaC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMzM5LjYxLDg0MS4wMXYtOS40M2g4LjUzdjkuNDNoLTguNTNaTTMzOS44NCw5MTYuMDJ2LTU3Ljk3aDguMDd2NTcuOTdoLTguMDdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0zNjUuNjUsOTE2LjAydi01MS4wM2gtOC40MXYtNi45M2g4LjQxdi0xNi44Mmg4LjA3djE2LjgyaDEwdjYuOTNoLTEwdjUxLjAzaC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNDIyLjcsOTA3Ljk2aC0uNTdjLS45MSwyLjg4LTIuNDgsNS4xLTQuNzIsNi42NS0yLjI0LDEuNTUtNS40NCwyLjM0LTkuNjEsMi4zNHMtNy40NS0uNzYtOS42MS0yLjI4Yy0yLjE2LTEuNTEtMy42LTMuOC00LjMyLTYuODctLjcyLTMuMDctMS4wOC03LjQ1LTEuMDgtMTMuMTR2LTM2LjU5aDguMDd2MzMuODdjMCw1LjUzLjI0LDkuNDcuNzQsMTEuODIuNDksMi4zNSwxLjQyLDMuOTIsMi43OSw0LjcyLDEuMzYuOCwzLjYsMS4yLDYuNywxLjIsMy40MSwwLDUuOTEtLjgxLDcuNS0yLjQ1LDEuNTktMS42MiwyLjU5LTMuODcsMy4wMS02LjcuNDItMi44NC42My02Ljk1LjYzLTEyLjMzdi0zMC4xMmg4LjA3djU3Ljk3aC03LjE2bC0uNDUtOC4wN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTQ0OC4xNyw5MTYuMDJ2LTUxLjAzaC04LjQxdi02LjkzaDguNDF2LTE2LjgyaDguMDd2MTYuODJoMTB2Ni45M2gtMTB2NTEuMDNoLTguMDdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik00NzkuNzEsOTE0LjU1Yy0yLjY5LTEuNTktNC40My00LjM2LTUuMjMtOC4zLS44LTMuOTMtMS4xOS0xMC4zNC0xLjE5LTE5LjJzLjQtMTUuMjcsMS4xOS0xOS4yMSwyLjU0LTYuNzEsNS4yMy04LjNjMi42OS0xLjYsNy4xMS0yLjM5LDEzLjI0LTIuMzlzMTAuNTUuNzksMTMuMjQsMi4zOWMyLjY5LDEuNTksNC40MSw0LjM2LDUuMTcsOC4zLjc2LDMuOTQsMS4xNCwxMC4zNCwxLjE0LDE5LjIxcy0uMzgsMTUuMjctMS4xNCwxOS4yYy0uNzYsMy45NC0yLjQ4LDYuNzEtNS4xNyw4LjMtMi42OSwxLjYtNy4xLDIuMzktMTMuMjQsMi4zOXMtMTAuNTUtLjc5LTEzLjI0LTIuMzlaTTUwMC45Niw5MDguNDFjMS41NS0xLjA2LDIuNTItMy4wMywyLjktNS45MXMuNTctOC4wMy41Ny0xNS40NS0uMTktMTIuNTgtLjU3LTE1LjQ2LTEuMzUtNC44NS0yLjktNS45MS00LjIyLTEuNi04LjAxLTEuNi02LjU1LjU0LTguMDcsMS42LTIuNDgsMy4wNS0yLjksNS45NmMtLjQyLDIuOTItLjYyLDguMDUtLjYyLDE1LjQxcy4yMSwxMi40OC42MiwxNS40Yy40MiwyLjkyLDEuMzgsNC45LDIuOSw1Ljk2czQuMjEsMS42LDguMDcsMS42LDYuNDYtLjU0LDguMDEtMS42WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNTQ3LjYyLDkxNi4wMnYtNzguMmgzNS4yNHY3LjUxaC0yNi43MXYyOS4yMWgyMy43NnY3LjM5aC0yMy43NnYzNC4xaC04LjUyWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNjI3LjUzLDg4OS42NmgtMjkuNzhjMCw2LjE0LjI4LDEwLjU1Ljg1LDEzLjI0LjU3LDIuNywxLjc4LDQuNTUsMy42NCw1LjU3LDEuODYsMS4wMiw0Ljk4LDEuNTQsOS4zOCwxLjU0LDUsMCw5Ljc4LS40MiwxNC4zMi0xLjI2djYuNTljLTEuNzQuNDYtNC4xMy44NC03LjE2LDEuMTQtMy4wMy4zLTUuOTUuNDUtOC43NS40NS02LjE0LDAtMTAuNjEtLjktMTMuNDEtMi42OC0yLjgtMS43Ny00LjY2LTQuNjctNS41Ny04LjctLjkxLTQuMDEtMS4zNi0xMC4xNS0xLjM2LTE4LjQxcy4zOC0xNC4zOCwxLjE0LTE4LjM2LDIuNTItNi45MSw1LjI5LTguODFjMi43Ny0xLjg5LDcuMjItMi44NCwxMy4zNi0yLjg0LDUuNzYsMCw5Ljg5LjkxLDEyLjM5LDIuNzMsMi41LDEuODIsNC4wNyw0LjY2LDQuNzIsOC41Mi42NCwzLjg3Ljk2LDEwLjA4Ljk2LDE4LjY1djIuNjFaTTYwMS42MSw4NjUuMzNjLTEuNTkuOS0yLjYzLDIuNjctMy4xMiw1LjI4LS40OSwyLjYyLS43NCw2Ljk2LS43NCwxMy4wMmgyMi4wNXYtMS4zN2MwLTUuNTMtLjMtOS41Ni0uOTEtMTIuMXMtMS42MS00LjItMy4wMS01Yy0xLjQtLjc5LTMuNTgtMS4xOS02LjU0LTEuMTktMy41NiwwLTYuMTQuNDUtNy43MywxLjM3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNjQ0LjYzLDkxNC40NGMtMi4zMS0xLjY3LTMuOTQtNC41OS00Ljg5LTguNzUtLjk1LTQuMTctMS40Mi0xMC4zNS0xLjQyLTE4LjUzcy40NS0xNC4yOCwxLjM2LTE4LjUzLDIuNTItNy4yMiw0LjgzLTguOTNjMi4zMS0xLjcsNS43LTIuNTYsMTAuMTctMi41NiwzLjY0LDAsNi41NS42MSw4Ljc1LDEuODIsMi4yLDEuMjIsMy44MywzLjI2LDQuODksNi4xNGguNTd2LTMzLjUzaDguMDd2ODQuNDVoLTcuMTZsLS40NS03Ljk2aC0uNTdjLTEuMDYsMy40OS0yLjc5LDUuODQtNS4xNyw3LjA1cy01LjMyLDEuODItOC44MSwxLjgyYy00LjQ3LDAtNy44Ni0uODQtMTAuMTctMi41Wk02NjQuMzYsOTA4LjA3YzEuNTktMS4wNSwyLjY5LTIuOCwzLjMtNS4yMy41My0xLjk3Ljg3LTQuMTgsMS4wMi02LjY1LjE1LTIuNDYuMjMtNS44Mi4yMy0xMC4wNiwwLTYuNDQtLjM0LTEwLjk5LTEuMDItMTMuNjQtLjYxLTIuOTUtMS43Mi01LjAzLTMuMzUtNi4yNS0xLjYzLTEuMjEtMy45Ni0xLjgyLTYuOTktMS44Mi0zLjQxLDAtNS44Ny41LTcuMzksMS40OC0xLjUyLjk5LTIuNTIsMy0zLjAxLDYuMDMtLjQ5LDMuMDMtLjc0LDguMDctLjc0LDE1LjEycy4yNiwxMi4wOC43OSwxNS4xMWMuNTMsMy4wNCwxLjUzLDUuMDQsMy4wMSw2LjAzLDEuNDguOTgsNCwxLjQ4LDcuNTYsMS40OCwyLjgsMCw1LS41NCw2LjU5LTEuNloiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTcyNy4zMyw4ODkuNjZoLTI5Ljc4YzAsNi4xNC4yOCwxMC41NS44NSwxMy4yNC41NywyLjcsMS43OCw0LjU1LDMuNjQsNS41NywxLjg2LDEuMDIsNC45OCwxLjU0LDkuMzgsMS41NCw1LDAsOS43OC0uNDIsMTQuMzItMS4yNnY2LjU5Yy0xLjc0LjQ2LTQuMTMuODQtNy4xNiwxLjE0LTMuMDMuMy01Ljk1LjQ1LTguNzUuNDUtNi4xNCwwLTEwLjYxLS45LTEzLjQxLTIuNjgtMi44LTEuNzctNC42Ni00LjY3LTUuNTctOC43LS45MS00LjAxLTEuMzYtMTAuMTUtMS4zNi0xOC40MXMuMzgtMTQuMzgsMS4xNC0xOC4zNiwyLjUyLTYuOTEsNS4yOS04LjgxYzIuNzctMS44OSw3LjIyLTIuODQsMTMuMzYtMi44NCw1Ljc2LDAsOS44OS45MSwxMi4zOSwyLjczLDIuNSwxLjgyLDQuMDcsNC42Niw0LjcyLDguNTIuNjQsMy44Ny45NiwxMC4wOC45NiwxOC42NXYyLjYxWk03MDEuNDEsODY1LjMzYy0xLjU5LjktMi42MywyLjY3LTMuMTIsNS4yOC0uNDksMi42Mi0uNzQsNi45Ni0uNzQsMTMuMDJoMjIuMDV2LTEuMzdjMC01LjUzLS4zLTkuNTYtLjkxLTEyLjFzLTEuNjEtNC4yLTMuMDEtNWMtMS40LS43OS0zLjU4LTEuMTktNi41NC0xLjE5LTMuNTYsMC02LjE0LjQ1LTcuNzMsMS4zN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTczOS45NCw4NTguMDZoNy4wNWwuNDUsMTAuNzloLjY4Yy45OC00LjQ3LDIuNzEtNy41Myw1LjE3LTkuMiwyLjQ2LTEuNjYsNS43NC0yLjUsOS44My0yLjV2OC4xOWMtMy45NCwwLTcuMDEuODMtOS4yMSwyLjUtMi4yLDEuNjYtMy43Myw0LjE1LTQuNiw3LjQ0LS44NywzLjMtMS4zMSw3LjcxLTEuMzEsMTMuMjV2MjcuNWgtOC4wN3YtNTcuOTdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik03NzEuNDMsOTEzLjNjLTIuMzUtMi40My0zLjUyLTYuODItMy41Mi0xMy4xOSwwLTQuMzkuNDMtNy44MiwxLjMxLTEwLjI4Ljg3LTIuNDYsMi4zNS00LjIyLDQuNDMtNS4yOCwyLjA4LTEuMDYsNS4wMi0xLjYsOC44MS0xLjYsMi4yLDAsNy4yLjE5LDE1LC41N3YtNC4wOWMwLTQuNzgtLjMyLTguMjEtLjk3LTEwLjI5LS42NC0yLjA4LTEuODItMy40NC0zLjUyLTQuMDktMS43LS42NS00LjUzLS45Ny04LjQ3LS45Ny0xLjc0LDAtNCwuMTQtNi43Ni40LTIuNzcuMjctNS4xLjU1LTYuOTkuODZ2LTYuNTljNC45My0xLjA2LDEwLjI3LTEuNiwxNi4wMy0xLjYsNS4zLDAsOS4yNi42NSwxMS44OCwxLjk0LDIuNjEsMS4yOCw0LjQxLDMuNDgsNS40LDYuNTkuOTksMy4xLDEuNDgsNy42NSwxLjQ4LDEzLjY0djM2LjcxaC03LjE2bC0uNDUtNy45NmgtLjU3Yy0xLjE0LDMuNTYtMi45Nyw1Ljk0LTUuNTEsNy4xMS0yLjU0LDEuMTctNS41MSwxLjc2LTguOTIsMS43Ni01LjMxLDAtOS4xMy0xLjIxLTExLjQ4LTMuNjRaTTc5Miw5MDkuMDRjMS42Ni0uNjUsMi45MS0yLjAyLDMuNzUtNC4xNSwxLjE0LTMuMDQsMS43MS03LjA5LDEuNzEtMTIuMTd2LTMuNzVoLTEyLjk2Yy0yLjQzLDAtNC4yMy4yNS01LjQuNzQtMS4xOC40OS0yLjAxLDEuNDgtMi41LDIuOTUtLjQ5LDEuNDgtLjc0LDMuNzctLjc0LDYuODhzLjI0LDUuMTUuNzQsNi41OWMuNDksMS40NCwxLjQyLDIuNDUsMi43OSwzLjAxLDEuMzYuNTcsMy40MS44Niw2LjE0Ljg2czQuODEtLjMyLDYuNDgtLjk3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNODE5LjUxLDkxNi4wMnYtODQuNDVoOC4wN3Y4NC40NWgtOC4wN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTg2OC4xLDkxNC40NGMtMi4zMS0xLjY3LTMuOTQtNC41OS00Ljg5LTguNzUtLjk1LTQuMTctMS40Mi0xMC4zNS0xLjQyLTE4LjUzcy40NS0xNC4yOCwxLjM2LTE4LjUzLDIuNTItNy4yMiw0LjgzLTguOTNjMi4zMS0xLjcsNS43LTIuNTYsMTAuMTctMi41NiwzLjY0LDAsNi41NS42MSw4Ljc1LDEuODIsMi4yLDEuMjIsMy44MywzLjI2LDQuODksNi4xNGguNTd2LTMzLjUzaDguMDd2ODQuNDVoLTcuMTZsLS40NS03Ljk2aC0uNTdjLTEuMDYsMy40OS0yLjc5LDUuODQtNS4xNyw3LjA1cy01LjMyLDEuODItOC44MSwxLjgyYy00LjQ3LDAtNy44Ni0uODQtMTAuMTctMi41Wk04ODcuODIsOTA4LjA3YzEuNTktMS4wNSwyLjY5LTIuOCwzLjMtNS4yMy41My0xLjk3Ljg3LTQuMTgsMS4wMi02LjY1LjE1LTIuNDYuMjMtNS44Mi4yMy0xMC4wNiwwLTYuNDQtLjM0LTEwLjk5LTEuMDItMTMuNjQtLjYxLTIuOTUtMS43Mi01LjAzLTMuMzUtNi4yNS0xLjYzLTEuMjEtMy45Ni0xLjgyLTYuOTktMS44Mi0zLjQxLDAtNS44Ny41LTcuMzksMS40OC0xLjUyLjk5LTIuNTIsMy0zLjAxLDYuMDMtLjQ5LDMuMDMtLjc0LDguMDctLjc0LDE1LjEycy4yNiwxMi4wOC43OSwxNS4xMWMuNTMsMy4wNCwxLjUzLDUuMDQsMy4wMSw2LjAzLDEuNDguOTgsNCwxLjQ4LDcuNTYsMS40OCwyLjgsMCw1LS41NCw2LjU5LTEuNloiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTk1MC43OSw4ODkuNjZoLTI5Ljc4YzAsNi4xNC4yOCwxMC41NS44NSwxMy4yNC41NywyLjcsMS43OCw0LjU1LDMuNjQsNS41NywxLjg2LDEuMDIsNC45OCwxLjU0LDkuMzgsMS41NCw1LDAsOS43OC0uNDIsMTQuMzItMS4yNnY2LjU5Yy0xLjc0LjQ2LTQuMTMuODQtNy4xNiwxLjE0LTMuMDMuMy01Ljk1LjQ1LTguNzUuNDUtNi4xNCwwLTEwLjYxLS45LTEzLjQxLTIuNjgtMi44LTEuNzctNC42Ni00LjY3LTUuNTctOC43LS45MS00LjAxLTEuMzYtMTAuMTUtMS4zNi0xOC40MXMuMzgtMTQuMzgsMS4xNC0xOC4zNiwyLjUyLTYuOTEsNS4yOS04LjgxYzIuNzctMS44OSw3LjIyLTIuODQsMTMuMzYtMi44NCw1Ljc2LDAsOS44OS45MSwxMi4zOSwyLjczLDIuNSwxLjgyLDQuMDcsNC42Niw0LjcyLDguNTIuNjQsMy44Ny45NiwxMC4wOC45NiwxOC42NXYyLjYxWk05MjQuODcsODY1LjMzYy0xLjU5LjktMi42MywyLjY3LTMuMTIsNS4yOC0uNDksMi42Mi0uNzQsNi45Ni0uNzQsMTMuMDJoMjIuMDV2LTEuMzdjMC01LjUzLS4zLTkuNTYtLjkxLTEyLjFzLTEuNjEtNC4yLTMuMDEtNWMtMS40LS43OS0zLjU4LTEuMTktNi41NC0xLjE5LTMuNTYsMC02LjE0LjQ1LTcuNzMsMS4zN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTk4Ni4wMyw4MzcuODJoMjMuNzVjNi40NCwwLDExLjA2LDEuNjcsMTMuODcsNSwyLjgsMy4zMyw0LjIxLDguMTgsNC4yMSwxNC41NSwwLDUuMzgtLjkzLDkuNTYtMi43OCwxMi41Ni0xLjg2LDMtNC44LDQuOTUtOC44MSw1Ljg2di40NWM0LjcuOTksNy45MiwzLjA4LDkuNjYsNi4zMXMyLjYyLDcuNTIsMi42MiwxMi45MWMwLDYuMzYtMS4zNywxMS4zOC00LjA5LDE1LjA2cy03Ljc3LDUuNTEtMTUuMTIsNS41MWgtMjMuM3YtNzguMlpNMTAxNi4zOCw4NjkuMzFjMS45Ny0yLjIsMi45NS01LjY1LDIuOTUtMTAuMzUsMC0zLjQxLS4zNC02LjA3LTEuMDItOC4wMS0uNjgtMS45My0xLjg3LTMuMzUtMy41OC00LjI2LTEuNzEtLjkxLTQuMTUtMS4zNy03LjMzLTEuMzdoLTEyLjk2djI3LjI4aDEyLjk2YzQuMDIsMCw3LjAxLTEuMSw4Ljk4LTMuM1pNMTAxNy4zNCw5MDUuMzRjMS43LTIuMTIsMi41Ni01Ljc2LDIuNTYtMTAuOTFzLS45MS04LjkzLTIuNzMtMTEuMDktNC45Ni0zLjI0LTkuNDMtMy4yNGgtMTMuM3YyOC40MmgxMy4zYzQuNywwLDcuOS0xLjA2LDkuNjEtMy4xOFoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTEwNDEuMTUsODU4LjA2aDcuMDVsLjQ2LDEwLjc5aC42OGMuOTktNC40NywyLjcxLTcuNTMsNS4xNy05LjIsMi40Ni0xLjY2LDUuNzQtMi41LDkuODMtMi41djguMTljLTMuOTQsMC03LjAxLjgzLTkuMjEsMi41LTIuMiwxLjY2LTMuNzMsNC4xNS00LjYsNy40NHMtMS4zMSw3LjcxLTEuMzEsMTMuMjV2MjcuNWgtOC4wN3YtNTcuOTdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMDcyLjY0LDkxMy4zYy0yLjM1LTIuNDMtMy41My02LjgyLTMuNTMtMTMuMTksMC00LjM5LjQ0LTcuODIsMS4zMS0xMC4yOC44Ny0yLjQ2LDIuMzUtNC4yMiw0LjQ0LTUuMjgsMi4wOC0xLjA2LDUuMDItMS42LDguODEtMS42LDIuMiwwLDcuMi4xOSwxNS4wMS41N3YtNC4wOWMwLTQuNzgtLjMyLTguMjEtLjk2LTEwLjI5LS42NS0yLjA4LTEuODItMy40NC0zLjUzLTQuMDktMS43LS42NS00LjUzLS45Ny04LjQ3LS45Ny0xLjc0LDAtNCwuMTQtNi43Ny40LTIuNzYuMjctNS4xLjU1LTYuOTkuODZ2LTYuNTljNC45My0xLjA2LDEwLjI3LTEuNiwxNi4wMy0xLjYsNS4zLDAsOS4yNi42NSwxMS44OCwxLjk0LDIuNjIsMS4yOCw0LjQyLDMuNDgsNS40LDYuNTkuOTgsMy4xLDEuNDgsNy42NSwxLjQ4LDEzLjY0djM2LjcxaC03LjE2bC0uNDYtNy45NmgtLjU3Yy0xLjE0LDMuNTYtMi45Nyw1Ljk0LTUuNTEsNy4xMXMtNS41MSwxLjc2LTguOTIsMS43NmMtNS4zMSwwLTkuMTMtMS4yMS0xMS40OC0zLjY0Wk0xMDkzLjIxLDkwOS4wNGMxLjY3LS42NSwyLjkyLTIuMDIsMy43NS00LjE1LDEuMTQtMy4wNCwxLjcxLTcuMDksMS43MS0xMi4xN3YtMy43NWgtMTIuOTZjLTIuNDMsMC00LjIzLjI1LTUuNC43NC0xLjE4LjQ5LTIuMDEsMS40OC0yLjUsMi45NXMtLjc0LDMuNzctLjc0LDYuODguMjQsNS4xNS43NCw2LjU5LDEuNDIsMi40NSwyLjc4LDMuMDFjMS4zNy41NywzLjQxLjg2LDYuMTQuODZzNC44MS0uMzIsNi40OC0uOTdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMTI2LjUxLDkxNi41NGMtMi45NS0uMjctNS4zOC0uNTktNy4yNy0uOTd2LTYuN2M0Ljg1LjgzLDkuODUsMS4yNSwxNS4wMSwxLjI1LDIuODgsMCw1LjA0LS4zOCw2LjQ4LTEuMTRzMi4zOS0xLjgyLDIuODQtMy4xOGMuNDYtMS4zNy42OC0zLjIyLjY4LTUuNTcsMC0yLjgxLS4xNS00Ljc5LS40Ni01Ljk3LS4zLTEuMTctLjgxLTEuOTctMS41My0yLjM4cy0xLjk1LS43NC0zLjY5LS45N2wtMTEuMzctMS43MWMtMy42NC0uNTMtNi4xLTEuOTEtNy4zOS00LjE1cy0xLjkzLTUuODktMS45My0xMC45N2MwLTQuNTUuNzItOC4wNSwyLjE2LTEwLjUxLDEuNDQtMi40NiwzLjQyLTQuMTUsNS45Ni01LjA2LDIuNTQtLjksNS44Mi0xLjM3LDkuODQtMS4zNywyLjM0LDAsNC44NS4xNiw3LjUuNDYsMi42NS4zLDQuNzcuNjcsNi4zNywxLjE0djYuNTljLTEuNzQtLjM4LTMuODktLjctNi40Mi0uOTctMi41NC0uMjctNS4wMi0uNC03LjQ1LS40LTMuNTYsMC02LjE0LjY1LTcuNzMsMS45My0xLjU5LDEuMjktMi4zOSwzLjgzLTIuMzksNy42MiwwLDIuNS4xNSw0LjM0LjQ1LDUuNTEuMywxLjE4LjgyLDEuOTksMS41NCwyLjQ1czEuOTEuNzksMy41OCwxLjAybDExLjAyLDEuNDhjMi40Mi4zLDQuMzQuOTMsNS43NCwxLjg3LDEuNC45NSwyLjQ0LDIuNTIsMy4xMiw0LjcyczEuMDIsNS4zNSwxLjAyLDkuNDNjMCw2LjM3LTEuMzcsMTAuNzgtNC4wOSwxMy4yNS0yLjczLDIuNDYtNy4xNiwzLjY5LTEzLjMsMy42OS0yLjU4LDAtNS4zNC0uMTQtOC4zLS40WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTE2My41Nyw4NDcuNnYtLjU3bDYuMTQtMTUuNDVoOC41M3YuNTdsLTguNzUsMTUuNDVoLTUuOTFaTTExNjMuNTcsOTE2LjAydi01Ny45N2g4LjA3djU3Ljk3aC04LjA3WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTE4NS44NSw5MTYuMDJ2LTg0LjQ1aDguMDd2ODQuNDVoLTguMDdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMjA3LjksODQxLjAxdi05LjQzaDguNTN2OS40M2gtOC41M1pNMTIwOC4xMiw5MTYuMDJ2LTU3Ljk3aDguMDd2NTcuOTdoLTguMDdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMjMwLjYzLDkxMy4zYy0yLjM1LTIuNDMtMy41My02LjgyLTMuNTMtMTMuMTksMC00LjM5LjQ0LTcuODIsMS4zMS0xMC4yOC44Ny0yLjQ2LDIuMzUtNC4yMiw0LjQ0LTUuMjgsMi4wOC0xLjA2LDUuMDItMS42LDguODEtMS42LDIuMiwwLDcuMi4xOSwxNS4wMS41N3YtNC4wOWMwLTQuNzgtLjMyLTguMjEtLjk2LTEwLjI5LS42NS0yLjA4LTEuODItMy40NC0zLjUzLTQuMDktMS43LS42NS00LjUzLS45Ny04LjQ3LS45Ny0xLjc0LDAtNCwuMTQtNi43Ny40LTIuNzYuMjctNS4xLjU1LTYuOTkuODZ2LTYuNTljNC45My0xLjA2LDEwLjI3LTEuNiwxNi4wMy0xLjYsNS4zLDAsOS4yNi42NSwxMS44OCwxLjk0LDIuNjIsMS4yOCw0LjQyLDMuNDgsNS40LDYuNTkuOTgsMy4xLDEuNDgsNy42NSwxLjQ4LDEzLjY0djM2LjcxaC03LjE2bC0uNDYtNy45NmgtLjU3Yy0xLjE0LDMuNTYtMi45Nyw1Ljk0LTUuNTEsNy4xMXMtNS41MSwxLjc2LTguOTIsMS43NmMtNS4zMSwwLTkuMTMtMS4yMS0xMS40OC0zLjY0Wk0xMjUxLjIxLDkwOS4wNGMxLjY3LS42NSwyLjkyLTIuMDIsMy43NS00LjE1LDEuMTQtMy4wNCwxLjcxLTcuMDksMS43MS0xMi4xN3YtMy43NWgtMTIuOTZjLTIuNDMsMC00LjIzLjI1LTUuNC43NC0xLjE4LjQ5LTIuMDEsMS40OC0yLjUsMi45NXMtLjc0LDMuNzctLjc0LDYuODguMjQsNS4xNS43NCw2LjU5LDEuNDIsMi40NSwyLjc4LDMuMDFjMS4zNy41NywzLjQxLjg2LDYuMTQuODZzNC44MS0uMzIsNi40OC0uOTdaIi8+CiAgPC9nPgogIDxnPgogICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNNDY4LjQyLDI1MS4wM3YtNDYuNTljMC0yMi44NS0xOC41My00MS4zOC00MS4zOC00MS4zOEgxMDEuMzhjLTIyLjg1LDAtNDEuMzgsMTguNTItNDEuMzgsNDEuMzh2MzYwLjI0YzAsMjIuODUsMTguNTIsNDEuMzgsNDEuMzgsNDEuMzhoMzQwLjIybC0yNy4zNi02MS40NWMtNi44NC0xNS4zNS0yMi4wNy0yNS4yNS0zOC44OC0yNS4yNWgtMzYuNDRzLTEyNC44Ni0uMDEtMTI0Ljg2LS4wMWgtNTIuMDVjLTguNDYsMC0xNS4zMi02Ljg2LTE1LjMyLTE1LjMydi0yMzguODJjMC04LjQ2LDYuODYtMTUuMzIsMTUuMzItMTUuMzJoMjA0LjI1YzguNDYsMCwxNS4zMiw2Ljg2LDE1LjMyLDE1LjMydjI0LjQ3bDg2LjgzLTM4LjY2WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMzgxLjU5LDMwOS4wM2wtMjE2LjksOTYuNTd2OTQuODdsOTUuNzItNDIuNTQsOC40NC0zLjc1LDExMi43My01MC4xLDYxLjU5LTI3LjQyYzE1LjM1LTYuODQsMjUuMjUtMjIuMDcsMjUuMjUtMzguODd2LTY3LjQybC04Ni44MywzOC42NloiLz4KICA8L2c+Cjwvc3ZnPg==" alt="ENEDES" class="header-logo-img"><div class="header-logo">ENEDES · Escola de Negócios e Desenvolvimento Social · IFB Digital</div>
+    <div class="header-title">Relatório de Maturidade Digital ABDI</div>
+    <div class="header-sub" id="hdr-sub">Carregando…</div>
+    <div class="header-badge" id="hdr-badge">⏳ Calculando…</div>
+  </div>
+  <div class="kpis-grid" id="kpis"></div>
+  <div class="secao">
+    <div class="secao-titulo">📐 Fórmula ABDI — Cálculo Oficial</div>
+    <div class="formula-card">
+      <div style="font-size:14px;font-weight:700;color:var(--azul);margin-bottom:12px">IMD_projeto = ((IMD_t − IMD_t-1) ÷ IMD_t-1) × 100</div>
+      <div class="formula-box" id="formula-box">Calculando…</div>
+      <div class="formula-passos" id="formula-passos"></div>
+      <div class="resultado-abdi" id="resultado-abdi"></div>
+    </div>
+  </div>
+  <div class="secao">
+    <div class="secao-titulo">📊 Comparativo de Scores</div>
+    <div class="comp-grid" id="comp-grid"></div>
+  </div>
+  <div class="secao">
+    <div class="secao-titulo">📏 Evolução por Dimensão</div>
+    <div class="legenda"><div class="legenda-item"><div class="legenda-dot antes"></div>Antes</div><div class="legenda-item"><div class="legenda-dot depois"></div>Depois</div></div>
+    <div class="barra-wrap" id="barras-dims"></div>
+  </div>
+  <div class="secao">
+    <div class="secao-titulo">📈 Visualizações</div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-titulo">Radar — Dimensões Antes × Depois</div><div class="chart-wrap"><canvas id="chartRadar"></canvas></div></div>
+      <div class="chart-card"><div class="chart-titulo">Distribuição de Níveis</div><div class="chart-wrap"><canvas id="chartNiveis"></canvas></div></div>
+    </div>
+  </div>
+  <div class="secao">
+    <div class="secao-titulo">🎯 Transformação de Níveis</div>
+    <div class="niveis-grid" id="niveis-grid"></div>
+  </div>
+  <div class="secao">
+    <div class="secao-titulo">✅ Principais Conquistas</div>
+    <div class="conquistas-grid" id="conquistas"></div>
+  </div>
+  <div class="footer" id="footer-dash"></div>
 </div>
 
-<div id="app" style="display:none;">
-
-  <!-- Filtros -->
-  <div id="filtros-wrap">
-    <label>Turma / Curso:</label>
-    <select id="filtro-turma" onchange="renderRelatorio()">
-      <option value="">Todas as turmas</option>
-    </select>
-    <button class="btn-print" onclick="window.print()">
-      🖨️ Imprimir / PDF
-    </button>
+<!-- ═══════════════ METODOLOGIA ═══════════════ -->
+<div class="page" id="page-metod">
+  <div class="secao"><div class="secao-titulo">📐 Fórmula ABDI</div>
+    <div class="formula-card">
+      <div class="formula-box">IMD_projeto = ((IMD_t − IMD_t-1) ÷ IMD_t-1) × 100</div>
+      <p style="font-size:13px;color:var(--cinza);line-height:1.6">Onde: <strong>IMD_t-1</strong> = Índice Médio ANTES | <strong>IMD_t</strong> = Índice Médio DEPOIS | <strong>IMD_projeto</strong> = Percentual de aumento.<br>Meta ABDI: <strong>30%</strong> de evolução.</p>
+    </div>
   </div>
-
-  <div class="relatorio" id="relatorio-content">
-    <!-- gerado por JS -->
+  <div class="secao"><div class="secao-titulo">📝 Critério de Pontuação por Pergunta</div>
+    <div style="overflow-x:auto;border-radius:10px;box-shadow:var(--sombra)">
+    <table class="metod-table">
+      <thead><tr><th>#</th><th>Dimensão</th><th>Pergunta</th><th>Opção de Resposta</th><th>Pontos</th></tr></thead>
+      <tbody id="metod-tbody"></tbody>
+    </table></div>
   </div>
-
+  <div class="secao"><div class="secao-titulo">🎯 Classificação de Níveis</div>
+    <div style="overflow-x:auto;border-radius:10px;box-shadow:var(--sombra)">
+    <table class="niveis-table">
+      <thead><tr><th>Nível</th><th>Score</th><th>Descrição</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-0">Iniciante Digital</span></td><td class="mono">10 – 17</td><td>Pouca ou nenhuma digitalização</td></tr>
+        <tr><td><span class="tag tag-1">Em Desenvolvimento</span></td><td class="mono">18 – 24</td><td>Primeiros passos com tecnologia</td></tr>
+        <tr><td><span class="tag tag-2">Em Transição</span></td><td class="mono">25 – 31</td><td>Uso consistente de ferramentas digitais</td></tr>
+        <tr><td><span class="tag tag-3">Digitalmente Ativo</span></td><td class="mono">32 – 37</td><td>Uso avançado e integrado de tecnologias</td></tr>
+        <tr><td><span class="tag tag-4">Referência Digital</span></td><td class="mono">38 – 40</td><td>Referência em maturidade digital</td></tr>
+      </tbody>
+    </table></div>
+  </div>
 </div>
+
+<!-- ═══════════════ RANKING ═══════════════ -->
+<div class="page" id="page-ranking">
+  <div class="data-controles">
+    <input type="text" id="busca-rank" placeholder="🔍 Buscar participante…" oninput="renderRanking()">
+    <div class="data-info" id="rank-info"></div>
+  </div>
+  <div style="overflow-x:auto;border-radius:10px;box-shadow:var(--sombra)">
+  <table class="rank-table">
+    <thead><tr><th>#</th><th>Nome</th><th>Turma</th><th>Score Antes</th><th>Score Depois</th><th>Evolução</th><th>Nível Antes</th><th>Nível Depois</th></tr></thead>
+    <tbody id="rank-tbody"></tbody>
+  </table></div>
+</div>
+
+<!-- ═══════════════ ANTES ═══════════════ -->
+<div class="page" id="page-antes">
+  <div class="data-controles">
+    <select id="filtro-antes-turma" onchange="renderTabela('antes')"><option value="">Todas as turmas</option></select>
+    <input type="text" id="busca-antes" placeholder="🔍 Buscar…" oninput="renderTabela('antes')">
+    <div class="data-info" id="info-antes"></div>
+  </div>
+  <div class="data-table-wrap"><table class="data-table"><thead id="thead-antes"></thead><tbody id="tbody-antes"></tbody></table></div>
+  <div class="paginacao" id="pag-antes"></div>
+</div>
+
+<!-- ═══════════════ DEPOIS ═══════════════ -->
+<div class="page" id="page-depois">
+  <div class="data-controles">
+    <select id="filtro-depois-turma" onchange="renderTabela('depois')"><option value="">Todas as turmas</option></select>
+    <input type="text" id="busca-depois" placeholder="🔍 Buscar…" oninput="renderTabela('depois')">
+    <div class="data-info" id="info-depois"></div>
+  </div>
+  <div class="data-table-wrap"><table class="data-table"><thead id="thead-depois"></thead><tbody id="tbody-depois"></tbody></table></div>
+  <div class="paginacao" id="pag-depois"></div>
+</div>
+</div><!-- /app -->
 
 <script>
 const SUPA_URL  = 'https://mbclrqyetdakitljwfos.supabase.co';
@@ -366,437 +342,296 @@ const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
 const NIVEIS_NOMES = ['Iniciante Digital','Em Desenvolvimento','Em Transição','Digitalmente Ativo','Referência Digital'];
 const NIVEIS_CORES = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6'];
-const DIMS_NOMES   = ['Atendimento','Financeiro','Marketing','Gestão','Confiança'];
+const DIMS = ['Atendimento','Financeiro','Marketing','Gestão','Confiança'];
+const DIMS_FIELDS = ['dim_atendimento','dim_financeiro','dim_marketing','dim_gestao','dim_confianca'];
+
+const PERGUNTAS_NOMES = [
+  'Como você atende e se comunica com seus clientes?',
+  'Como você mantém contato com clientes após a venda?',
+  'Como você controla as finanças do seu negócio?',
+  'Como seus clientes pagam você?',
+  'Como você divulga seu negócio?',
+  'Qual é a presença do seu negócio na internet?',
+  'Como você controla seu estoque ou agenda de serviços?',
+  'Como você organiza suas tarefas e tempo no negócio?',
+  'Como você se sente ao usar tecnologia no seu negócio?',
+  'Qual é o seu principal objetivo com a tecnologia agora?',
+];
+const PERGUNTAS_OPCOES = [
+  ['Pessoalmente ou por ligação, sem registro','WhatsApp pessoal, sem organização','WhatsApp Business com respostas automáticas','CRM ou sistema para organizar e acompanhar clientes'],
+  ['Não mantenho contato','Às vezes entro em contato quando lembro','Envio mensagens em datas especiais ou promoções','Tenho lista segmentada e faço ações regulares de relacionamento'],
+  ['Tudo na cabeça, sem anotação','Anoto em papel ou caderno','Uso planilha ou aplicativo gratuito','Uso sistema de gestão financeira com relatórios'],
+  ['Só dinheiro em espécie','Pix e dinheiro, sem controle de recebimentos','Pix, cartão e link de pagamento','Múltiplas formas com conciliação e controle automático'],
+  ['Só boca a boca e indicação','Posto às vezes nas redes sociais, sem planejamento','Tenho perfil ativo com publicações regulares','Uso estratégia de conteúdo, anúncios pagos e analiso resultados'],
+  ['Não tenho nenhum perfil ou página','Tenho perfil no Instagram ou Facebook, mas raramente atualizo','Tenho perfil ativo e cadastro no Google Meu Negócio','Tenho site ou loja online além das redes sociais'],
+  ['Vou vendo o que tem / atendo quem chega','Anoto em papel ou agenda física','Uso planilha ou aplicativo no celular','Uso sistema integrado com alertas e histórico'],
+  ['Faço conforme aparece, sem planejamento','Tenho uma lista mental ou anotações soltas','Uso agenda ou aplicativo de tarefas','Planejo semanalmente com metas e prioridades definidas'],
+  ['Tenho muita dificuldade e evito ao máximo','Consigo o básico, mas preciso de ajuda com frequência','Me viro bem e aprendo novas ferramentas quando preciso','Uso tecnologia com confiança e busco inovações para o negócio'],
+  ['Sobreviver e pagar as contas','Facilitar meu dia a dia e reduzir trabalho manual','Crescer e atrair mais clientes com tecnologia','Escalar o negócio e automatizar processos'],
+];
+const DIMS_POR_PERG = [0,0,1,1,2,2,3,3,4,4];
 
 let TODOS = [];
-let chartRadar = null, chartNiveis = null, chartEvol = null;
+let rankList = [];
+let paginaAntes = 1, paginaDepois = 1;
+const POR_PAG = 50;
+let charts = {};
 
-function nomeNivel(n) { return NIVEIS_NOMES[n] || '—'; }
+function fmt(n,d=2){ return n==null?'—':Number(n).toFixed(d); }
+function nomeNivel(n){ return NIVEIS_NOMES[n]||'—'; }
+function corNivel(n){ return NIVEIS_CORES[n]||'#6b7280'; }
 
-function slugNivel(nome) {
-  const m = {
-    'Iniciante Digital': 'iniciante-digital',
-    'Em Desenvolvimento': 'em-desenvolvimento',
-    'Em Transição': 'em-transicao',
-    'Digitalmente Ativo': 'digitalmente-ativo',
-    'Referência Digital': 'referencia-digital',
-    'Inicial': 'inicial', 'Básico': 'basico',
-    'Intermediário': 'intermediario', 'Avançado': 'avancado',
-  };
-  return m[nome] || 'basico';
+function optTexto(perg, opt){
+  const opts = PERGUNTAS_OPCOES[perg];
+  if(!opts) return opt;
+  return opts[(opt||1)-1] || opt;
 }
 
-function fmt(n, dec=2) { return n == null ? '—' : Number(n).toFixed(dec); }
+async function carregar(){
+  const { data, error } = await supa.from('respostas').select('*').order('criado_em',{ascending:true});
+  if(error){ document.getElementById('loading').innerHTML='<p style="color:red">Erro: '+error.message+'</p>'; return; }
+  TODOS = data||[];
 
-async function carregar() {
-  const { data, error } = await supa
-    .from('respostas')
-    .select('*')
-    .order('criado_em', { ascending: false });
-
-  if (error) {
-    document.getElementById('loading').innerHTML =
-      '<p style="color:red">Erro ao carregar dados: ' + error.message + '</p>';
-    return;
-  }
-
-  TODOS = data || [];
-
-  // Popula filtro de turma
-  const turmas = [...new Set(TODOS.map(r => r.turma).filter(Boolean))].sort();
-  const sel = document.getElementById('filtro-turma');
-  turmas.forEach(t => {
-    const op = document.createElement('option');
-    op.value = t; op.textContent = t;
-    sel.appendChild(op);
+  const turmas = [...new Set(TODOS.map(r=>r.turma).filter(Boolean))].sort();
+  ['filtro-turma','filtro-antes-turma','filtro-depois-turma'].forEach(id=>{
+    const sel = document.getElementById(id);
+    turmas.forEach(t=>{ const o=document.createElement('option'); o.value=o.textContent=t; sel.appendChild(o); });
   });
 
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  renderRelatorio();
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').style.display='block';
+
+  renderMetodologia();
+  aplicarFiltro();
 }
 
-function filtrar() {
-  const turma = document.getElementById('filtro-turma').value;
-  let dados = TODOS;
-  if (turma) dados = dados.filter(r => r.turma === turma);
-  return dados;
+function aplicarFiltro(){
+  renderDash();
+  renderRanking();
+  renderTabela('antes');
+  renderTabela('depois');
 }
 
-function calcMetricas(dados) {
-  const antes  = dados.filter(r => r.momento === 'antes');
-  const depois = dados.filter(r => r.momento === 'depois');
+function filtrar(){
+  const t = document.getElementById('filtro-turma').value;
+  return t ? TODOS.filter(r=>r.turma===t) : TODOS;
+}
 
-  const avgAntes  = antes.length  ? antes.reduce((a,r)=>a+r.score_total,0)/antes.length  : 0;
-  const avgDepois = depois.length ? depois.reduce((a,r)=>a+r.score_total,0)/depois.length : 0;
-  const evolucao  = avgAntes > 0  ? ((avgDepois - avgAntes) / avgAntes) * 100 : 0;
-  const evMedia   = avgDepois - avgAntes;
+function calcMetricas(dados){
+  const todosAntes  = dados.filter(r=>r.momento==='antes');
+  const todosDepois = dados.filter(r=>r.momento==='depois');
+  // Garante só participantes com PAR completo (antes E depois)
+  const keysDepois = new Set(todosDepois.map(r=>(r.nome||'')+'|'+(r.turma||'')));
+  const keysAntes  = new Set(todosAntes.map(r=>(r.nome||'')+'|'+(r.turma||'')));
+  const antes  = todosAntes.filter(r=>keysDepois.has((r.nome||'')+'|'+(r.turma||'')));
+  const depois = todosDepois.filter(r=>keysAntes.has((r.nome||'')+'|'+(r.turma||'')));
+  const avgA = antes.length  ? antes.reduce((a,r)=>a+r.score_total,0)/antes.length  : 0;
+  const avgD = depois.length ? depois.reduce((a,r)=>a+r.score_total,0)/depois.length : 0;
+  const imd  = avgA>0 ? ((avgD-avgA)/avgA)*100 : 0;
+  const ating = (imd/30)*100;
+  const evMedia = avgD-avgA;
 
-  // IMD da fórmula ABDI
-  const imd = avgAntes > 0 ? ((avgDepois - avgAntes) / avgAntes) * 100 : 0;
-  const atingimento = (imd / 30) * 100;
+  const mapaA={};
+  antes.forEach(r=>{ mapaA[(r.nome||'')+'|'+(r.turma||'')]=r; });
+  let mudaram=0;
+  depois.forEach(r=>{ const k=(r.nome||'')+'|'+(r.turma||''); if(mapaA[k]&&mapaA[k].nivel!==r.nivel) mudaram++; });
 
-  // Mudaram de nível (pareia por nome+turma)
-  const mapaAntes = {};
-  antes.forEach(r => { const k = (r.nome||'') + '|' + (r.turma||''); mapaAntes[k] = r; });
-  let mudaram = 0;
-  depois.forEach(r => {
-    const k = (r.nome||'') + '|' + (r.turma||'');
-    if (mapaAntes[k] && mapaAntes[k].nivel !== r.nivel) mudaram++;
+  const distA  = [0,1,2,3,4].map(n=>antes.filter(r=>r.nivel===n).length);
+  const distD  = [0,1,2,3,4].map(n=>depois.filter(r=>r.nivel===n).length);
+  const avgDimA = DIMS_FIELDS.map(d=>antes.length  ? antes.reduce((a,r)=>a+(r[d]||0),0)/antes.length  : 0);
+  const avgDimD = DIMS_FIELDS.map(d=>depois.length ? depois.reduce((a,r)=>a+(r[d]||0),0)/depois.length : 0);
+
+  const rl=[];
+  depois.forEach(r=>{
+    const k=(r.nome||'')+'|'+(r.turma||'');
+    const ra=mapaA[k];
+    if(ra) rl.push({nome:r.nome,turma:r.turma,antes:ra.score_total,depois:r.score_total,evol:r.score_total-ra.score_total,nA:nomeNivel(ra.nivel),nD:nomeNivel(r.nivel),nivelA:ra.nivel,nivelD:r.nivel});
   });
+  rl.sort((a,b)=>b.evol-a.evol);
+  rankList = rl;
 
-  // Distribuição de níveis
-  const distAntes  = [0,1,2,3,4].map(n => antes.filter(r=>r.nivel===n).length);
-  const distDepois = [0,1,2,3,4].map(n => depois.filter(r=>r.nivel===n).length);
-
-  // Médias por dimensão
-  const dims = ['dim_atendimento','dim_financeiro','dim_marketing','dim_gestao','dim_confianca'];
-  const avgDimAntes  = dims.map(d => antes.length  ? antes.reduce((a,r)=>a+(r[d]||0),0)/antes.length  : 0);
-  const avgDimDepois = dims.map(d => depois.length ? depois.reduce((a,r)=>a+(r[d]||0),0)/depois.length : 0);
-
-  // Ranking: pareados
-  const rankList = [];
-  depois.forEach(r => {
-    const k = (r.nome||'') + '|' + (r.turma||'');
-    const ra = mapaAntes[k];
-    if (ra) rankList.push({
-      nome: r.nome, turma: r.turma,
-      antes: ra.score_total, depois: r.score_total,
-      evolucao: r.score_total - ra.score_total,
-      nivelAntes: nomeNivel(ra.nivel),
-      nivelDepois: nomeNivel(r.nivel),
-    });
-  });
-  rankList.sort((a,b) => b.evolucao - a.evolucao);
-
-  return { antes, depois, avgAntes, avgDepois, evolucao, evMedia, imd, atingimento,
-           mudaram, distAntes, distDepois, avgDimAntes, avgDimDepois, rankList };
+  return {antes,depois,avgA,avgD,imd,ating,evMedia,mudaram,distA,distD,avgDimA,avgDimD,rl};
 }
 
-function renderRelatorio() {
+function renderDash(){
   const dados = filtrar();
   const m = calcMetricas(dados);
-  const el = document.getElementById('relatorio-content');
-  el.innerHTML = buildHTML(m, dados);
-  renderCharts(m);
-}
-
-function buildHTML(m, dados) {
   const turma = document.getElementById('filtro-turma').value;
-  const hoje  = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 
-  const imdClass = m.imd >= 30 ? 'destaque' : 'amarelo';
-  const imdIcon  = m.imd >= 30 ? '🏆' : '📈';
+  document.getElementById('hdr-sub').textContent = (turma?'Turma: '+turma:'Todas as turmas')+' · Gerado em '+hoje;
+  document.getElementById('hdr-badge').textContent = `${m.imd>=30?'🏆':'📈'} IMD Projeto: ${fmt(m.imd,1)}% · Atingimento: ${fmt(m.ating,0)}%`;
 
-  // ── NÍVEIS VARIAÇÃO
-  const niveisLabels = NIVEIS_NOMES;
-  const niveisRows = niveisLabels.map((nome, i) => {
-    const a = m.distAntes[i], d = m.distDepois[i], v = d - a;
-    const pct = a > 0 ? ((v/a)*100).toFixed(1) : (d > 0 ? '+100' : '0');
-    const cls = v > 0 ? 'positivo' : v < 0 ? 'negativo' : 'neutro';
-    const sinal = v > 0 ? '+' : '';
-    return `
-      <div class="nivel-card">
-        <div class="nivel-nome" style="color:${NIVEIS_CORES[i]}">${nome}</div>
-        <div class="nivel-antes-depois">
-          <div class="nivel-num antes">
-            <div class="val">${a}</div>
-            <div class="sub">Antes</div>
-          </div>
-          <div style="font-size:20px;line-height:1;color:var(--cinza-m);align-self:center;">→</div>
-          <div class="nivel-num depois">
-            <div class="val">${d}</div>
-            <div class="sub">Depois</div>
-          </div>
-        </div>
-        <div class="nivel-variacao ${cls}">${sinal}${v} (${sinal}${pct}%)</div>
-      </div>`;
+  // KPIs
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi-card azul"><div class="kpi-label">Participantes</div><div class="kpi-valor azul">${m.antes.length}</div><div class="kpi-desc">com avaliação ANTES<br>${m.depois.length} responderam DEPOIS</div></div>
+    <div class="kpi-card verde"><div class="kpi-label">IMD Projeto</div><div class="kpi-valor verde">${fmt(m.imd,1)}%</div><div class="kpi-desc">Fórmula oficial ABDI<br>Meta: 30%</div></div>
+    <div class="kpi-card ${m.imd>=30?'destaque':'amarelo'}"><div class="kpi-label">Atingimento</div><div class="kpi-valor ${m.imd>=30?'destaque':'amarelo'}">${fmt(m.ating,0)}%</div><div class="kpi-desc">da meta ABDI<br>${m.imd>=30?'✅ Meta superada!':'⚠️ Abaixo da meta'}</div></div>
+    <div class="kpi-card roxo"><div class="kpi-label">Mudaram de nível</div><div class="kpi-valor roxo">${m.mudaram}</div><div class="kpi-desc">participantes<br>(${m.antes.length>0?((m.mudaram/m.antes.length)*100).toFixed(0):0}% do total)</div></div>
+    <div class="kpi-card verde"><div class="kpi-label">Evolução Média</div><div class="kpi-valor verde">+${fmt(m.evMedia,2)}</div><div class="kpi-desc">pontos/participante<br>${fmt(m.avgA,2)} → ${fmt(m.avgD,2)}</div></div>`;
+
+  // Fórmula
+  document.getElementById('formula-box').innerHTML = `IMD_projeto = (( <b>${fmt(m.avgD,2)}</b> − <b>${fmt(m.avgA,2)}</b> ) ÷ ${fmt(m.avgA,2)}) × 100 = <b>${fmt(m.imd,2)}%</b>`;
+  document.getElementById('formula-passos').innerHTML = [
+    ['Passo 1 · IMD_t-1', fmt(m.avgA,2), 'Índice Médio ANTES'],
+    ['Passo 2 · IMD_t',   fmt(m.avgD,2), 'Índice Médio DEPOIS'],
+    ['Passo 3 · Diferença','+'+fmt(m.evMedia,2), 'IMD_t − IMD_t-1'],
+    ['Passo 4 · Resultado', fmt(m.imd,2)+'%', 'IMD_projeto final'],
+  ].map(([n,v,d])=>`<div class="passo"><div class="passo-num">${n}</div><div class="passo-val">${v}</div><div class="passo-desc">${d}</div></div>`).join('');
+  document.getElementById('resultado-abdi').innerHTML = `
+    <div><div class="res-label">🎯 Meta ABDI: 30% de evolução</div><div class="res-meta">Atingimento: ${fmt(m.ating,0)}% da meta${m.imd>=30?' · Superada em +'+fmt(m.imd-30,2)+' p.p.':''}</div></div>
+    <div class="res-val">${fmt(m.imd,1)}%</div>`;
+
+  // Comp
+  document.getElementById('comp-grid').innerHTML = `
+    <div class="comp-card"><div class="comp-label">Score Médio — Antes</div><div class="num-antes">${fmt(m.avgA,2)}</div><div class="comp-sub">pontos (escala 10–40)</div></div>
+    <div class="comp-card"><div class="comp-label">Score Médio — Depois</div><div class="num-depois">${fmt(m.avgD,2)}</div><div class="comp-sub">pontos (escala 10–40)</div></div>
+    <div class="comp-card"><div class="comp-label">Evolução Média</div><div class="num-evol">+${fmt(m.evMedia,2)}</div><div class="comp-sub">pontos por participante</div><div style="margin-top:8px;font-size:13px"><span style="color:#ef4444;font-weight:700">${fmt(m.avgA,1)}</span> → <span style="color:#10b981;font-weight:700">${fmt(m.avgD,1)}</span></div></div>`;
+
+  // Barras dimensões
+  document.getElementById('barras-dims').innerHTML = DIMS.map((nome,i)=>{
+    const a=m.avgDimA[i], d=m.avgDimD[i];
+    return `<div class="barra-row">
+      <div class="barra-label">${nome}</div>
+      <div class="barra-tracks">
+        <div class="barra-track"><div class="fill-antes" style="width:${(a/8*100).toFixed(1)}%"></div></div>
+        <div class="barra-track"><div class="fill-depois" style="width:${(d/8*100).toFixed(1)}%"></div></div>
+      </div>
+      <div class="barra-vals"><div class="val-antes">${a.toFixed(1)}</div><div class="val-depois">${d.toFixed(1)}</div></div>
+    </div>`;
   }).join('');
 
-  // ── BARRAS DIMENSÕES
-  const maxDim = 8;
-  const barrasRows = DIMS_NOMES.map((nome, i) => {
-    const a = m.avgDimAntes[i].toFixed(1);
-    const d = m.avgDimDepois[i].toFixed(1);
-    const pa = (m.avgDimAntes[i]/maxDim*100).toFixed(1);
-    const pd = (m.avgDimDepois[i]/maxDim*100).toFixed(1);
-    return `
-      <div class="barra-row">
-        <div class="barra-label">${nome}</div>
-        <div class="barra-tracks">
-          <div class="barra-track"><div class="barra-fill-antes" style="width:${pa}%"></div></div>
-          <div class="barra-track"><div class="barra-fill-depois" style="width:${pd}%"></div></div>
-        </div>
-        <div class="barra-vals">
-          <div class="barra-val-antes">${a}</div>
-          <div class="barra-val-depois">${d}</div>
-        </div>
-      </div>`;
+  // Níveis
+  document.getElementById('niveis-grid').innerHTML = NIVEIS_NOMES.map((nome,i)=>{
+    const a=m.distA[i], d=m.distD[i], v=d-a;
+    const pct=a>0?((v/a)*100).toFixed(1):d>0?'+100':'0';
+    const cls=v>0?'positivo':v<0?'negativo':'neutro';
+    return `<div class="nivel-card">
+      <div class="nivel-nome" style="color:${NIVEIS_CORES[i]}">${nome}</div>
+      <div class="nivel-nums">
+        <div class="nivel-num antes"><div class="val">${a}</div><div class="sub">Antes</div></div>
+        <div style="font-size:18px;color:var(--cinza-m);align-self:center">→</div>
+        <div class="nivel-num depois"><div class="val">${d}</div><div class="sub">Depois</div></div>
+      </div>
+      <div class="nivel-var ${cls}">${v>0?'+':''}${v} (${v>0?'+':''}${pct}%)</div>
+    </div>`;
   }).join('');
 
-  // ── RANKING (top 20)
-  const rankRows = m.rankList.slice(0,20).map((r, i) => `
-    <div class="ranking-row">
-      <div class="rank-pos ${i<3?'top3':''}">${i+1}</div>
-      <div class="rank-nome">${r.nome || '—'}</div>
-      <div class="rank-score antes">${fmt(r.antes,2)}</div>
-      <div class="rank-score depois">${fmt(r.depois,2)}</div>
-      <div class="rank-evolucao">+${fmt(r.evolucao,2)}</div>
-      <div><span class="tag-nivel nivel-${slugNivel(r.nivelAntes)}">${r.nivelAntes}</span></div>
-      <div><span class="tag-nivel nivel-${slugNivel(r.nivelDepois)}">${r.nivelDepois}</span></div>
-    </div>`).join('');
+  // Conquistas
+  const cqs = [
+    ['🏆', `<strong>IMD Projeto: ${fmt(m.imd,2)}%</strong> — ${m.imd>=30?'Meta ABDI superada ('+fmt(m.ating,0)+'% de atingimento)':'Próximo da meta ABDI de 30%'}`],
+    ['👥', `<strong>${m.antes.length} participantes</strong> avaliados antes e ${m.depois.length} após a formação`],
+    ['📈', `<strong>${m.mudaram} empreendedores</strong> (${m.antes.length>0?((m.mudaram/m.antes.length)*100).toFixed(1):0}%) mudaram de nível de maturidade digital`],
+    ['⭐', `Evolução média de <strong>+${fmt(m.evMedia,2)} pontos</strong> por participante (${fmt(m.avgA,2)} → ${fmt(m.avgD,2)})`],
+  ];
+  if(m.rl.length) cqs.push(['🥇',`Maior evolução individual: <strong>+${fmt(m.rl[0].evol,2)} pontos</strong> — ${m.rl[0].nome}`]);
+  cqs.push(['🔬',`Score médio cresceu <strong>${fmt(m.evMedia,2)} pontos</strong> — de ${fmt(m.avgA,2)} para ${fmt(m.avgD,2)}`]);
+  document.getElementById('conquistas').innerHTML = cqs.map(([ic,tx])=>`<div class="conquista"><div class="conquista-icon">${ic}</div><div class="conquista-text">${tx}</div></div>`).join('');
 
-  return `
-  <!-- HEADER -->
-  <div class="header-bloco">
-    <div class="header-logo">ENEDES · Escola de Negócios e Desenvolvimento Social · IFB</div>
-    <div class="header-title">Relatório de Maturidade Digital ABDI</div>
-    <div class="header-sub">${turma ? 'Turma: ' + turma : 'Todas as turmas'} · Gerado em ${hoje}</div>
-    <div class="header-badge">${imdIcon} IMD Projeto: ${fmt(m.imd,1)}% · Atingimento da Meta: ${fmt(m.atingimento,0)}%</div>
-  </div>
+  document.getElementById('footer-dash').textContent = `Relatório gerado em ${hoje} · ENEDES — Escola de Negócios e Desenvolvimento Social · IFB Digital`;
 
-  <!-- KPIs -->
-  <div class="kpis-grid">
-    <div class="kpi-card azul">
-      <div class="kpi-label">Participantes</div>
-      <div class="kpi-valor azul">${m.antes.length}</div>
-      <div class="kpi-desc">Avaliados (ANTES)<br>${m.depois.length} responderam depois</div>
-    </div>
-    <div class="kpi-card verde">
-      <div class="kpi-label">IMD Projeto</div>
-      <div class="kpi-valor verde">${fmt(m.imd,1)}%</div>
-      <div class="kpi-desc">Fórmula oficial ABDI<br>Meta: 30%</div>
-    </div>
-    <div class="kpi-card ${imdClass}">
-      <div class="kpi-label">Atingimento</div>
-      <div class="kpi-valor ${imdClass}">${fmt(m.atingimento,0)}%</div>
-      <div class="kpi-desc">da meta ABDI<br>${m.imd >= 30 ? '✅ Meta superada!' : '⚠️ Abaixo da meta'}</div>
-    </div>
-    <div class="kpi-card roxo">
-      <div class="kpi-label">Mudaram de nível</div>
-      <div class="kpi-valor roxo">${m.mudaram}</div>
-      <div class="kpi-desc">participantes com evolução<br>qualitativa de nível</div>
-    </div>
-    <div class="kpi-card verde">
-      <div class="kpi-label">Evolução Média</div>
-      <div class="kpi-valor verde">+${fmt(m.evMedia,2)}</div>
-      <div class="kpi-desc">pontos por participante<br>${fmt(m.avgAntes,2)} → ${fmt(m.avgDepois,2)}</div>
-    </div>
-  </div>
-
-  <!-- FÓRMULA ABDI -->
-  <div class="secao">
-    <div class="secao-titulo">📐 Fórmula ABDI — Cálculo Oficial</div>
-    <div class="formula-card">
-      <div class="formula-titulo">IMD_projeto = ((IMD_t − IMD_t-1) ÷ IMD_t-1) × 100</div>
-      <div class="formula-box">IMD_projeto = (( ${fmt(m.avgDepois,2)} − ${fmt(m.avgAntes,2)} ) ÷ ${fmt(m.avgAntes,2)}) × 100 = <strong>${fmt(m.imd,2)}%</strong></div>
-      <div class="formula-passos">
-        <div class="passo">
-          <div class="passo-num">Passo 1 · IMD_t-1</div>
-          <div class="passo-val">${fmt(m.avgAntes,2)}</div>
-          <div class="passo-desc">Índice Médio ANTES</div>
-        </div>
-        <div class="passo">
-          <div class="passo-num">Passo 2 · IMD_t</div>
-          <div class="passo-val">${fmt(m.avgDepois,2)}</div>
-          <div class="passo-desc">Índice Médio DEPOIS</div>
-        </div>
-        <div class="passo">
-          <div class="passo-num">Passo 3 · Diferença</div>
-          <div class="passo-val">+${fmt(m.evMedia,2)}</div>
-          <div class="passo-desc">IMD_t − IMD_t-1</div>
-        </div>
-        <div class="passo">
-          <div class="passo-num">Passo 4 · Resultado</div>
-          <div class="passo-val">${fmt(m.imd,2)}%</div>
-          <div class="passo-desc">IMD_projeto final</div>
-        </div>
-      </div>
-      <div class="resultado-abdi">
-        <div>
-          <div class="res-label">🎯 Meta ABDI: 30% de evolução</div>
-          <div class="res-meta">Atingimento: ${fmt(m.atingimento,0)}% da meta${m.imd>=30 ? ' · Superada em +' + fmt(m.imd-30,2) + ' p.p.' : ''}</div>
-        </div>
-        <div class="res-val">${fmt(m.imd,1)}%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- COMPARATIVO SCORES -->
-  <div class="secao">
-    <div class="secao-titulo">📊 Comparativo de Scores</div>
-    <div class="comp-grid">
-      <div class="comp-card">
-        <div class="comp-label">Score Médio — Antes</div>
-        <div class="comp-antes">${fmt(m.avgAntes,2)}</div>
-        <div class="comp-sub">pontos (escala 10–40)</div>
-      </div>
-      <div class="comp-card">
-        <div class="comp-label">Score Médio — Depois</div>
-        <div class="comp-depois">${fmt(m.avgDepois,2)}</div>
-        <div class="comp-sub">pontos (escala 10–40)</div>
-      </div>
-      <div class="comp-card">
-        <div class="comp-label">Evolução Média</div>
-        <div class="comp-evolucao">+${fmt(m.evMedia,2)}</div>
-        <div class="comp-sub">pontos por participante</div>
-        <div class="arrow-evolucao">
-          <span style="color:#ef4444;font-weight:700">${fmt(m.avgAntes,1)}</span>
-          <span class="seta">→</span>
-          <span style="color:#10b981;font-weight:700">${fmt(m.avgDepois,1)}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DIMENSÕES -->
-  <div class="secao">
-    <div class="secao-titulo">📏 Evolução por Dimensão</div>
-    <div class="legenda">
-      <div class="legenda-item"><div class="legenda-dot antes"></div> Antes</div>
-      <div class="legenda-item"><div class="legenda-dot depois"></div> Depois</div>
-    </div>
-    <div class="barra-comp-wrap">${barrasRows}</div>
-  </div>
-
-  <!-- GRÁFICOS -->
-  <div class="secao">
-    <div class="secao-titulo">📈 Visualizações</div>
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-titulo">Radar — Dimensões Antes × Depois</div>
-        <div class="chart-wrap"><canvas id="chartRadar"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-titulo">Distribuição de Níveis</div>
-        <div class="chart-wrap"><canvas id="chartNiveis"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TRANSFORMAÇÃO DE NÍVEIS -->
-  <div class="secao">
-    <div class="secao-titulo">🎯 Transformação de Níveis de Maturidade</div>
-    <div class="niveis-grid">${niveisRows}</div>
-  </div>
-
-  <!-- CONQUISTAS -->
-  <div class="secao">
-    <div class="secao-titulo">✅ Principais Conquistas e Impactos</div>
-    <div class="conquistas-grid">
-      <div class="conquista-item">
-        <div class="conquista-icon">🏆</div>
-        <div class="conquista-text"><strong>IMD Projeto: ${fmt(m.imd,2)}%</strong> — ${m.imd>=30?'Meta ABDI superada ('+fmt(m.atingimento,0)+'% de atingimento)':'Próximo da meta ABDI de 30%'}</div>
-      </div>
-      <div class="conquista-item">
-        <div class="conquista-icon">👥</div>
-        <div class="conquista-text"><strong>${m.antes.length} participantes</strong> analisados com avaliação antes e depois da formação</div>
-      </div>
-      <div class="conquista-item">
-        <div class="conquista-icon">📈</div>
-        <div class="conquista-text"><strong>${m.mudaram} empreendedores</strong> (${m.antes.length>0?((m.mudaram/m.antes.length)*100).toFixed(1):0}%) mudaram de nível de maturidade digital</div>
-      </div>
-      <div class="conquista-item">
-        <div class="conquista-icon">⭐</div>
-        <div class="conquista-text">Evolução média de <strong>+${fmt(m.evMedia,2)} pontos</strong> por participante (de ${fmt(m.avgAntes,2)} para ${fmt(m.avgDepois,2)})</div>
-      </div>
-      ${m.rankList.length ? `
-      <div class="conquista-item">
-        <div class="conquista-icon">🥇</div>
-        <div class="conquista-text">Maior evolução individual: <strong>+${fmt(m.rankList[0].evolucao,2)} pontos</strong> — ${m.rankList[0].nome}</div>
-      </div>` : ''}
-      <div class="conquista-item">
-        <div class="conquista-icon">🔬</div>
-        <div class="conquista-text">Score médio aumentou <strong>${fmt(m.evMedia,2)} pontos</strong> (de ${fmt(m.avgAntes,2)} para ${fmt(m.avgDepois,2)})</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RANKING -->
-  <div class="secao">
-    <div class="secao-titulo">🏆 Ranking — Top ${Math.min(20, m.rankList.length)} Participantes por Evolução</div>
-    <div class="ranking-card">
-      <div class="ranking-header">
-        <div>#</div><div>Nome</div><div>Antes</div><div>Depois</div><div>Evolução</div>
-        <div>Nível Antes</div><div>Nível Depois</div>
-      </div>
-      ${rankRows || '<div style="padding:20px;text-align:center;color:var(--cinza-m)">Sem dados pareados suficientes</div>'}
-    </div>
-  </div>
-
-  <!-- METODOLOGIA -->
-  <div class="secao">
-    <div class="secao-titulo">📋 Metodologia e Critérios</div>
-    <div class="metod-card">
-      <div class="metod-grid">
-        <div class="metod-item"><div class="metod-label">Critério de Pontuação</div><div class="metod-val">10 perguntas sobre práticas digitais, cada resposta de 1 a 4 pontos</div></div>
-        <div class="metod-item"><div class="metod-label">Score Individual</div><div class="metod-val">Soma dos pontos das 10 perguntas (range: 10–40)</div></div>
-        <div class="metod-item"><div class="metod-label">IMD (Índice Médio)</div><div class="metod-val">Média dos scores de todos os participantes</div></div>
-        <div class="metod-item"><div class="metod-label">Fórmula ABDI</div><div class="metod-val">IMD_projeto = ((IMD_t − IMD_t-1) ÷ IMD_t-1) × 100</div></div>
-        <div class="metod-item"><div class="metod-label">Meta ABDI</div><div class="metod-val">30% de evolução no IMD entre início e fim da formação</div></div>
-        <div class="metod-item"><div class="metod-label">Classificação de Níveis</div><div class="metod-val">Iniciante (10–17) · Em Des. (18–24) · Em Transição (25–31) · Dig. Ativo (32–37) · Referência (38–40)</div></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">
-    Relatório gerado automaticamente em ${hoje} · ENEDES — Escola de Negócios e Desenvolvimento Social · IFB Digital
-  </div>`;
+  // Charts
+  Object.values(charts).forEach(c=>c&&c.destroy&&c.destroy()); charts={};
+  setTimeout(()=>{
+    const ctxR=document.getElementById('chartRadar');
+    if(ctxR) charts.radar=new Chart(ctxR,{type:'radar',data:{labels:DIMS,datasets:[
+      {label:'Antes',data:m.avgDimA.map(v=>+v.toFixed(2)),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.15)',pointBackgroundColor:'#ef4444',pointRadius:4,borderWidth:2},
+      {label:'Depois',data:m.avgDimD.map(v=>+v.toFixed(2)),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.15)',pointBackgroundColor:'#10b981',pointRadius:4,borderWidth:2},
+    ]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:8,ticks:{stepSize:2,font:{size:10}},pointLabels:{font:{size:11,weight:'bold'}}}},plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
+    const ctxN=document.getElementById('chartNiveis');
+    if(ctxN) charts.niveis=new Chart(ctxN,{type:'bar',data:{labels:NIVEIS_NOMES,datasets:[
+      {label:'Antes',data:m.distA,backgroundColor:'rgba(239,68,68,.75)',borderRadius:4},
+      {label:'Depois',data:m.distD,backgroundColor:'rgba(16,185,129,.75)',borderRadius:4},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+  },100);
 }
 
-let charts = {};
-function renderCharts(m) {
-  // destroi charts anteriores
-  Object.values(charts).forEach(c => c && c.destroy && c.destroy());
-  charts = {};
-
-  // Radar
-  const ctxR = document.getElementById('chartRadar');
-  if (ctxR) {
-    charts.radar = new Chart(ctxR, {
-      type: 'radar',
-      data: {
-        labels: DIMS_NOMES,
-        datasets: [
-          { label: 'Antes', data: m.avgDimAntes.map(v=>+v.toFixed(2)),
-            borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.15)',
-            pointBackgroundColor: '#ef4444', pointRadius: 4, borderWidth: 2 },
-          { label: 'Depois', data: m.avgDimDepois.map(v=>+v.toFixed(2)),
-            borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.15)',
-            pointBackgroundColor: '#10b981', pointRadius: 4, borderWidth: 2 },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: { r: { min: 0, max: 8, ticks: { stepSize: 2, font: { size: 10 } },
-          pointLabels: { font: { size: 11, weight: 'bold' } } } },
-        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
-      }
+function renderMetodologia(){
+  const DIMS_PERG = ['Atendimento','Atendimento','Financeiro','Financeiro','Marketing','Marketing','Gestão','Gestão','Confiança','Confiança'];
+  const PONTOS_POR_OPT = [[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4]];
+  const CORES_DIM = {'Atendimento':'#e24b4a','Financeiro':'#ef9f27','Marketing':'#378add','Gestão':'#3a9e4f','Confiança':'#7f77dd'};
+  let html='';
+  PERGUNTAS_NOMES.forEach((perg,pi)=>{
+    html+=`<tr class="perg-row"><td style="color:${CORES_DIM[DIMS_PERG[pi]]}">${pi+1}</td><td><span class="tag" style="background:${CORES_DIM[DIMS_PERG[pi]]}22;color:${CORES_DIM[DIMS_PERG[pi]]}">${DIMS_PERG[pi]}</span></td><td colspan="2" style="font-weight:700">${perg}</td></tr>`;
+    PERGUNTAS_OPCOES[pi].forEach((opt,oi)=>{
+      const pts=[1,2,3,4][oi];
+      html+=`<tr><td></td><td></td><td>${opt}</td><td><span class="badge-pts pts-${[0,25,50,75,100][oi]||'100'}">${pts}</span></td></tr>`;
     });
-  }
+  });
+  document.getElementById('metod-tbody').innerHTML=html;
+}
 
-  // Níveis agrupado
-  const ctxN = document.getElementById('chartNiveis');
-  if (ctxN) {
-    charts.niveis = new Chart(ctxN, {
-      type: 'bar',
-      data: {
-        labels: NIVEIS_NOMES.map(n => n.replace(' ','<br>')),
-        datasets: [
-          { label: 'Antes',  data: m.distAntes,  backgroundColor: 'rgba(239,68,68,.75)',  borderRadius: 4 },
-          { label: 'Depois', data: m.distDepois, backgroundColor: 'rgba(16,185,129,.75)', borderRadius: 4 },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
-        scales: {
-          x: { ticks: { font: { size: 9 } } },
-          y: { beginAtZero: true, ticks: { stepSize: 1 } }
-        }
-      }
-    });
-  }
+function renderRanking(){
+  const busca=(document.getElementById('busca-rank').value||'').toLowerCase();
+  const turma=document.getElementById('filtro-turma').value;
+  let lista=rankList.filter(r=>{
+    if(turma&&r.turma!==turma)return false;
+    if(busca&&!(r.nome||'').toLowerCase().includes(busca))return false;
+    return true;
+  });
+  document.getElementById('rank-info').textContent=lista.length+' participantes';
+  document.getElementById('rank-tbody').innerHTML=lista.map((r,i)=>`
+    <tr>
+      <td class="mono ${i<3?'top3':''}">${i+1}</td>
+      <td style="font-weight:600">${r.nome||'—'}</td>
+      <td style="font-size:11px;color:var(--cinza-m)">${(r.turma||'').substring(0,40)}</td>
+      <td class="mono" style="color:#ef4444">${fmt(r.antes,2)}</td>
+      <td class="mono" style="color:#10b981">${fmt(r.depois,2)}</td>
+      <td class="mono" style="color:var(--azul-m)">+${fmt(r.evol,2)}</td>
+      <td><span class="tag tag-${r.nivelA}">${r.nA}</span></td>
+      <td><span class="tag tag-${r.nivelD}">${r.nD}</span></td>
+    </tr>`).join('');
+}
+
+const pags = {antes:1,depois:1};
+function renderTabela(momento){
+  const busca=(document.getElementById('busca-'+momento).value||'').toLowerCase();
+  const filtroTurma=document.getElementById('filtro-'+momento+'-turma').value;
+  let dados=TODOS.filter(r=>r.momento===momento);
+  if(filtroTurma) dados=dados.filter(r=>r.turma===filtroTurma);
+  if(busca) dados=dados.filter(r=>(r.nome||'').toLowerCase().includes(busca)||(r.turma||'').toLowerCase().includes(busca));
+
+  const total=dados.length;
+  const totalPags=Math.ceil(total/POR_PAG);
+  if(pags[momento]>totalPags) pags[momento]=1;
+  const slice=dados.slice((pags[momento]-1)*POR_PAG, pags[momento]*POR_PAG);
+
+  document.getElementById('info-'+momento).textContent=total+' registros';
+
+  const thead=document.getElementById('thead-'+momento);
+  const tbody=document.getElementById('tbody-'+momento);
+  thead.innerHTML=`<tr><th>Nome</th><th>Turma</th><th>Score</th><th>Nível</th>${PERGUNTAS_NOMES.map((_,i)=>`<th>P${i+1}</th>`).join('')}</tr>`;
+  tbody.innerHTML=slice.map(r=>`
+    <tr>
+      <td style="font-weight:600;min-width:160px">${r.nome||'—'}</td>
+      <td style="min-width:140px;font-size:11px;color:var(--cinza-m)">${(r.turma||'').substring(0,35)}</td>
+      <td class="mono" style="color:${momento==='antes'?'#ef4444':'#10b981'};font-weight:700">${r.score_total||'—'}</td>
+      <td><span class="tag tag-${r.nivel}">${nomeNivel(r.nivel)}</span></td>
+      ${[1,2,3,4,5,6,7,8,9,10].map(n=>{
+        const v=r['r0'+n]||r['r'+n]||r[`r${String(n).padStart(2,'0')}`];
+        const txt=v?optTexto(n-1,v):'—';
+        return `<td title="${txt}" style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${txt.substring(0,30)}${txt.length>30?'…':''}</td>`;
+      }).join('')}
+    </tr>`).join('');
+
+  // Paginação
+  const pagEl=document.getElementById('pag-'+momento);
+  if(totalPags<=1){pagEl.innerHTML='';return;}
+  let pagHtml='';
+  if(pags[momento]>1) pagHtml+=`<button class="btn-pag" onclick="mudarPag('${momento}',${pags[momento]-1})">← Anterior</button>`;
+  for(let p=Math.max(1,pags[momento]-2);p<=Math.min(totalPags,pags[momento]+2);p++)
+    pagHtml+=`<button class="btn-pag ${p===pags[momento]?'ativo':''}" onclick="mudarPag('${momento}',${p})">${p}</button>`;
+  if(pags[momento]<totalPags) pagHtml+=`<button class="btn-pag" onclick="mudarPag('${momento}',${pags[momento]+1})">Próximo →</button>`;
+  pagEl.innerHTML=pagHtml;
+}
+
+function mudarPag(momento,p){pags[momento]=p;renderTabela(momento);}
+
+function irPara(pagina){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('ativo'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('ativo'));
+  document.getElementById('page-'+pagina).classList.add('ativo');
+  event.target.classList.add('ativo');
 }
 
 carregar();
