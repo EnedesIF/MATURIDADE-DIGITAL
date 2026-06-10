@@ -426,39 +426,14 @@ async function supaFetch(tabela, params){
 
 async function carregar(){
   let TODOS_RAW = [];
-
   try {
-    // Tenta tabela alunos_abdi_2025 (tem data_matricula e data_conclusao)
-    const rows = await supaFetch('alunos_abdi_2025', { select: '*', order: 'data_matricula.asc' });
-    if(rows && rows.length > 0){
-      rows.forEach(a => {
-        TODOS_RAW.push({
-          id: a.id+'_antes', nome: a.nome, turma: a.turma, momento: 'antes',
-          score_total: a.score_antes, nivel: a.nivel_antes,
-          data_matricula: a.data_matricula, data_conclusao: a.data_conclusao,
-          criado_em: a.data_matricula
-        });
-        TODOS_RAW.push({
-          id: a.id+'_depois', nome: a.nome, turma: a.turma, momento: 'depois',
-          score_total: a.score_depois, nivel: a.nivel_depois,
-          data_matricula: a.data_matricula, data_conclusao: a.data_conclusao,
-          criado_em: a.data_conclusao
-        });
-      });
-      console.log('✅ alunos_abdi_2025:', rows.length, 'alunos');
-    } else {
-      throw new Error('tabela vazia ou inexistente');
-    }
+    // Busca direto da tabela respostas (que agora tem data_matricula e data_conclusao)
+    const rows = await supaFetch('respostas', { select: '*', order: 'criado_em.asc' });
+    TODOS_RAW = rows || [];
+    console.log('✅ respostas carregadas:', TODOS_RAW.length);
   } catch(e) {
-    // Fallback: tabela respostas
-    console.warn('⚠️ Fallback para tabela respostas:', e.message);
-    try {
-      const rows = await supaFetch('respostas', { select: '*', order: 'criado_em.asc' });
-      TODOS_RAW = rows || [];
-    } catch(e2) {
-      document.getElementById('loading').innerHTML='<p style="color:red">Erro ao carregar dados: '+e2.message+'</p>';
-      return;
-    }
+    document.getElementById('loading').innerHTML='<p style="color:red">Erro ao carregar dados: '+e.message+'</p>';
+    return;
   }
 
   TODOS = TODOS_RAW;
