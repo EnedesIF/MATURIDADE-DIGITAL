@@ -35,7 +35,7 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
 .nav-tab:hover{color:var(--cinza-escuro);}
 .nav-tab.ativo{color:var(--azul-m);border-bottom-color:var(--azul-m);}
 .nav-filtros{display:flex;align-items:center;gap:10px;margin-left:auto;padding:8px 0;}
-.nav-filtros select{font-family:'Sora',sans-serif;font-size:12px;padding:5px 10px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza-l);color:var(--cinza-escuro);cursor:pointer;}
+.nav-filtros select{font-family:'Sora',sans-serif;font-size:11px;padding:4px 8px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza-l);color:var(--cinza-escuro);cursor:pointer;max-width:160px;}
 .btn-print{background:var(--verde-m);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;}
 .btn-print:hover{background:var(--verde);}
 
@@ -220,6 +220,28 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
   </div>
   <div class="nav-filtros">
     <select id="filtro-turma" onchange="aplicarFiltro()"><option value="">Todas as turmas</option></select>
+    <select id="filtro-mes-mat" onchange="aplicarFiltro()">
+      <option value="">Matrícula: todos meses</option>
+      <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+      <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+      <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+      <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+    </select>
+    <select id="filtro-ano-mat" onchange="aplicarFiltro()">
+      <option value="">Matrícula: todos anos</option>
+      <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+    </select>
+    <select id="filtro-mes-conc" onchange="aplicarFiltro()">
+      <option value="">Conclusão: todos meses</option>
+      <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+      <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+      <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+      <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+    </select>
+    <select id="filtro-ano-conc" onchange="aplicarFiltro()">
+      <option value="">Conclusão: todos anos</option>
+      <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+    </select>
     <button class="btn-print" onclick="window.print()">🖨️ PDF</button>
   </div>
 </nav>
@@ -387,15 +409,64 @@ function optTexto(perg, opt){
   return opts[(opt||1)-1] || opt;
 }
 
+async function supaFetch(tabela, params){
+  // Usa fetch nativo em vez do SDK para evitar DataCloneError no postMessage
+  const url = new URL(`${SUPA_URL}/rest/v1/${tabela}`);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
+  const resp = await fetch(url.toString(), {
+    headers: {
+      'apikey': SUPA_ANON,
+      'Authorization': 'Bearer ' + SUPA_ANON,
+      'Accept': 'application/json'
+    }
+  });
+  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  return await resp.json(); // retorna array puro, sem objetos Headers
+}
+
 async function carregar(){
-  const { data, error } = await supa.from('respostas').select('*').order('criado_em',{ascending:true});
-  if(error){ document.getElementById('loading').innerHTML='<p style="color:red">Erro: '+error.message+'</p>'; return; }
-  TODOS = data||[];
+  let TODOS_RAW = [];
+
+  try {
+    // Tenta tabela alunos_abdi_2025 (tem data_matricula e data_conclusao)
+    const rows = await supaFetch('alunos_abdi_2025', { select: '*', order: 'data_matricula.asc' });
+    if(rows && rows.length > 0){
+      rows.forEach(a => {
+        TODOS_RAW.push({
+          id: a.id+'_antes', nome: a.nome, turma: a.turma, momento: 'antes',
+          score_total: a.score_antes, nivel: a.nivel_antes,
+          data_matricula: a.data_matricula, data_conclusao: a.data_conclusao,
+          criado_em: a.data_matricula
+        });
+        TODOS_RAW.push({
+          id: a.id+'_depois', nome: a.nome, turma: a.turma, momento: 'depois',
+          score_total: a.score_depois, nivel: a.nivel_depois,
+          data_matricula: a.data_matricula, data_conclusao: a.data_conclusao,
+          criado_em: a.data_conclusao
+        });
+      });
+      console.log('✅ alunos_abdi_2025:', rows.length, 'alunos');
+    } else {
+      throw new Error('tabela vazia ou inexistente');
+    }
+  } catch(e) {
+    // Fallback: tabela respostas
+    console.warn('⚠️ Fallback para tabela respostas:', e.message);
+    try {
+      const rows = await supaFetch('respostas', { select: '*', order: 'criado_em.asc' });
+      TODOS_RAW = rows || [];
+    } catch(e2) {
+      document.getElementById('loading').innerHTML='<p style="color:red">Erro ao carregar dados: '+e2.message+'</p>';
+      return;
+    }
+  }
+
+  TODOS = TODOS_RAW;
 
   const turmas = [...new Set(TODOS.map(r=>r.turma).filter(Boolean))].sort();
   ['filtro-turma','filtro-antes-turma','filtro-depois-turma'].forEach(id=>{
     const sel = document.getElementById(id);
-    turmas.forEach(t=>{ const o=document.createElement('option'); o.value=o.textContent=t; sel.appendChild(o); });
+    if(sel){ turmas.forEach(t=>{ const o=document.createElement('option'); o.value=o.textContent=t; sel.appendChild(o); }); }
   });
 
   document.getElementById('loading').style.display='none';
@@ -413,8 +484,31 @@ function aplicarFiltro(){
 }
 
 function filtrar(){
-  const t = document.getElementById('filtro-turma').value;
-  return t ? TODOS.filter(r=>r.turma===t) : TODOS;
+  const t    = document.getElementById('filtro-turma').value;
+  const mesMat  = document.getElementById('filtro-mes-mat')?.value;
+  const anoMat  = document.getElementById('filtro-ano-mat')?.value;
+  const mesConc = document.getElementById('filtro-mes-conc')?.value;
+  const anoConc = document.getElementById('filtro-ano-conc')?.value;
+
+  return TODOS.filter(r => {
+    if(t && r.turma !== t) return false;
+
+    // Filtros de data de matrícula
+    if((mesMat || anoMat) && r.data_matricula){
+      const d = new Date(r.data_matricula);
+      if(mesMat && (d.getMonth()+1) !== parseInt(mesMat)) return false;
+      if(anoMat && d.getFullYear()  !== parseInt(anoMat))  return false;
+    }
+
+    // Filtros de data de conclusão
+    if((mesConc || anoConc) && r.data_conclusao){
+      const d = new Date(r.data_conclusao);
+      if(mesConc && (d.getMonth()+1) !== parseInt(mesConc)) return false;
+      if(anoConc && d.getFullYear()  !== parseInt(anoConc))  return false;
+    }
+
+    return true;
+  });
 }
 
 function calcMetricas(dados){
