@@ -445,8 +445,8 @@ async function carregar(){
   });
 
   // Popular anos de matrícula e conclusão dinamicamente (somente anos presentes nos dados)
-  const anosMatr = [...new Set(TODOS.map(r=>r.data_matricula).filter(Boolean).map(d=>new Date(d).getFullYear()))].sort();
-  const anosConc = [...new Set(TODOS.map(r=>r.data_conclusao).filter(Boolean).map(d=>new Date(d).getFullYear()))].sort();
+  const anosMatr = [...new Set(TODOS.map(r=>r.data_matricula).filter(Boolean).map(d=>new Date(d+'T12:00:00').getFullYear()))].sort();
+  const anosConc = [...new Set(TODOS.map(r=>r.data_conclusao).filter(Boolean).map(d=>new Date(d+'T12:00:00').getFullYear()))].sort();
   ['filtro-ano-mat','filtro-ano-conc'].forEach((id, i) => {
     const sel = document.getElementById(id);
     if(!sel) return;
@@ -479,15 +479,17 @@ function filtrar(){
     if(t && r.turma !== t) return false;
 
     // Filtros de data de matrícula
-    if((mesMat || anoMat) && r.data_matricula){
-      const d = new Date(r.data_matricula);
+    if(mesMat || anoMat){
+      if(!r.data_matricula) return false; // sem data = não aparece no filtro por data
+      const d = new Date(r.data_matricula + 'T12:00:00');
       if(mesMat && (d.getMonth()+1) !== parseInt(mesMat)) return false;
       if(anoMat && d.getFullYear()  !== parseInt(anoMat))  return false;
     }
 
     // Filtros de data de conclusão
-    if((mesConc || anoConc) && r.data_conclusao){
-      const d = new Date(r.data_conclusao);
+    if(mesConc || anoConc){
+      if(!r.data_conclusao) return false; // sem data = não aparece no filtro por data
+      const d = new Date(r.data_conclusao + 'T12:00:00');
       if(mesConc && (d.getMonth()+1) !== parseInt(mesConc)) return false;
       if(anoConc && d.getFullYear()  !== parseInt(anoConc))  return false;
     }
@@ -665,8 +667,9 @@ function renderRanking(){
 const pags = {antes:1,depois:1};
 function renderTabela(momento){
   const busca=(document.getElementById('busca-'+momento).value||'').toLowerCase();
-  const filtroTurma=document.getElementById('filtro-'+momento+'-turma').value;
-  let dados=TODOS.filter(r=>r.momento===momento);
+  const filtroTurma=document.getElementById('filtro-'+momento+'-turma')?.value||'';
+  // Usa filtrar() para respeitar filtros de data de matrícula/conclusão
+  let dados=filtrar().filter(r=>r.momento===momento);
   if(filtroTurma) dados=dados.filter(r=>r.turma===filtroTurma);
   if(busca) dados=dados.filter(r=>(r.nome||'').toLowerCase().includes(busca)||(r.turma||'').toLowerCase().includes(busca));
 
@@ -679,18 +682,15 @@ function renderTabela(momento){
 
   const thead=document.getElementById('thead-'+momento);
   const tbody=document.getElementById('tbody-'+momento);
-  thead.innerHTML=`<tr><th>Nome</th><th>Turma</th><th>Score</th><th>Nível</th>${PERGUNTAS_NOMES.map((_,i)=>`<th>P${i+1}</th>`).join('')}</tr>`;
+  thead.innerHTML=`<tr><th>Nome</th><th>Turma</th><th>Matrícula</th><th>Conclusão</th><th>Score</th><th>Nível</th></tr>`;
   tbody.innerHTML=slice.map(r=>`
     <tr>
       <td style="font-weight:600;min-width:160px">${r.nome||'—'}</td>
       <td style="min-width:140px;font-size:11px;color:var(--cinza-m)">${(r.turma||'').substring(0,35)}</td>
-      <td class="mono" style="color:${momento==='antes'?'#ef4444':'#10b981'};font-weight:700">${r.score_total||'—'}</td>
+      <td style="font-size:11px;color:var(--cinza-m)">${r.data_matricula||'—'}</td>
+      <td style="font-size:11px;color:var(--cinza-m)">${r.data_conclusao||'—'}</td>
+      <td class="mono" style="color:${momento==='antes'?'#ef4444':'#10b981'};font-weight:700">${fmt(r.score_total,2)||'—'}</td>
       <td><span class="tag tag-${r.nivel}">${nomeNivel(r.nivel)}</span></td>
-      ${[1,2,3,4,5,6,7,8,9,10].map(n=>{
-        const v=r['r0'+n]||r['r'+n]||r[`r${String(n).padStart(2,'0')}`];
-        const txt=v?optTexto(n-1,v):'—';
-        return `<td title="${txt}" style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${txt.substring(0,30)}${txt.length>30?'…':''}</td>`;
-      }).join('')}
     </tr>`).join('');
 
   // Paginação
