@@ -35,7 +35,7 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
 .nav-tab:hover{color:var(--cinza-escuro);}
 .nav-tab.ativo{color:var(--azul-m);border-bottom-color:var(--azul-m);}
 .nav-filtros{display:flex;align-items:center;gap:10px;margin-left:auto;padding:8px 0;}
-.nav-filtros select{font-family:'Sora',sans-serif;font-size:11px;padding:4px 8px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza-l);color:var(--cinza-escuro);cursor:pointer;max-width:160px;}
+.nav-filtros select{font-family:'Sora',sans-serif;font-size:11px;padding:4px 7px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza-l);color:var(--cinza-escuro);cursor:pointer;max-width:155px;}
 .btn-print{background:var(--verde-m);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;}
 .btn-print:hover{background:var(--verde);}
 
@@ -227,10 +227,7 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
       <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
       <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
     </select>
-    <select id="filtro-ano-mat" onchange="aplicarFiltro()">
-      <option value="">Matrícula: todos anos</option>
-      
-    </select>
+    <select id="filtro-ano-mat" onchange="aplicarFiltro()"><option value="">Matrícula: todos anos</option></select>
     <select id="filtro-mes-conc" onchange="aplicarFiltro()">
       <option value="">Conclusão: todos meses</option>
       <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
@@ -238,10 +235,7 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
       <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
       <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
     </select>
-    <select id="filtro-ano-conc" onchange="aplicarFiltro()">
-      <option value="">Conclusão: todos anos</option>
-      
-    </select>
+    <select id="filtro-ano-conc" onchange="aplicarFiltro()"><option value="">Conclusão: todos anos</option></select>
     <button class="btn-print" onclick="window.print()">🖨️ PDF</button>
   </div>
 </nav>
@@ -362,6 +356,16 @@ const SUPA_URL  = 'https://mbclrqyetdakitljwfos.supabase.co';
 const SUPA_ANON = 'sb_publishable_kSWiiwIrDWInbr5tywIG0g_8Kwpzr_-';
 const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
+async function supaFetch(tabela, params){
+  const url = new URL(`${SUPA_URL}/rest/v1/${tabela}`);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
+  const resp = await fetch(url.toString(), {
+    headers:{ 'apikey': SUPA_ANON, 'Authorization': 'Bearer '+SUPA_ANON, 'Accept': 'application/json' }
+  });
+  if(!resp.ok) throw new Error('HTTP '+resp.status);
+  return await resp.json();
+}
+
 const NIVEIS_NOMES = ['Iniciante Digital','Em Desenvolvimento','Em Transição','Digitalmente Ativo','Referência Digital'];
 const NIVEIS_CORES = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6'];
 const DIMS = ['Atendimento','Financeiro','Marketing','Gestão','Confiança'];
@@ -409,49 +413,27 @@ function optTexto(perg, opt){
   return opts[(opt||1)-1] || opt;
 }
 
-async function supaFetch(tabela, params){
-  // Usa fetch nativo em vez do SDK para evitar DataCloneError no postMessage
-  const url = new URL(`${SUPA_URL}/rest/v1/${tabela}`);
-  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
-  const resp = await fetch(url.toString(), {
-    headers: {
-      'apikey': SUPA_ANON,
-      'Authorization': 'Bearer ' + SUPA_ANON,
-      'Accept': 'application/json'
-    }
-  });
-  if(!resp.ok) throw new Error('HTTP ' + resp.status);
-  return await resp.json(); // retorna array puro, sem objetos Headers
-}
-
 async function carregar(){
-  let TODOS_RAW = [];
   try {
-    // Busca direto da tabela respostas (que agora tem data_matricula e data_conclusao)
     const rows = await supaFetch('respostas', { select: '*', order: 'criado_em.asc' });
-    TODOS_RAW = rows || [];
-    console.log('✅ respostas carregadas:', TODOS_RAW.length);
+    TODOS = rows || [];
   } catch(e) {
-    document.getElementById('loading').innerHTML='<p style="color:red">Erro ao carregar dados: '+e.message+'</p>';
+    document.getElementById('loading').innerHTML='<p style="color:red">Erro: '+e.message+'</p>';
     return;
   }
-
-  TODOS = TODOS_RAW;
 
   const turmas = [...new Set(TODOS.map(r=>r.turma).filter(Boolean))].sort();
   ['filtro-turma','filtro-antes-turma','filtro-depois-turma'].forEach(id=>{
     const sel = document.getElementById(id);
-    if(sel){ turmas.forEach(t=>{ const o=document.createElement('option'); o.value=o.textContent=t; sel.appendChild(o); }); }
+    if(sel) turmas.forEach(t=>{ const o=document.createElement('option'); o.value=o.textContent=t; sel.appendChild(o); });
   });
 
-  // Popular anos de matrícula e conclusão dinamicamente (somente anos presentes nos dados)
-  const anosMatr = [...new Set(TODOS.map(r=>r.data_matricula).filter(Boolean).map(d=>new Date(d+'T12:00:00').getFullYear()))].sort();
-  const anosConc = [...new Set(TODOS.map(r=>r.data_conclusao).filter(Boolean).map(d=>new Date(d+'T12:00:00').getFullYear()))].sort();
-  ['filtro-ano-mat','filtro-ano-conc'].forEach((id, i) => {
-    const sel = document.getElementById(id);
-    if(!sel) return;
-    const anos = i === 0 ? anosMatr : anosConc;
-    anos.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; sel.appendChild(o); });
+  // Anos dinâmicos de matrícula e conclusão
+  const anosM = [...new Set(TODOS.map(r=>r.data_matricula).filter(Boolean).map(d=>new Date(d+'T12:00:00').getFullYear()))].sort();
+  const anosC = [...new Set(TODOS.map(r=>r.data_conclusao).filter(Boolean).map(d=>new Date(d+'T12:00:00').getFullYear()))].sort();
+  ['filtro-ano-mat','filtro-ano-conc'].forEach((id,i)=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    (i===0?anosM:anosC).forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
   });
 
   document.getElementById('loading').style.display='none';
@@ -469,31 +451,25 @@ function aplicarFiltro(){
 }
 
 function filtrar(){
-  const t    = document.getElementById('filtro-turma').value;
+  const t       = document.getElementById('filtro-turma').value;
   const mesMat  = document.getElementById('filtro-mes-mat')?.value;
   const anoMat  = document.getElementById('filtro-ano-mat')?.value;
   const mesConc = document.getElementById('filtro-mes-conc')?.value;
   const anoConc = document.getElementById('filtro-ano-conc')?.value;
-
-  return TODOS.filter(r => {
-    if(t && r.turma !== t) return false;
-
-    // Filtros de data de matrícula
-    if(mesMat || anoMat){
-      if(!r.data_matricula) return false; // sem data = não aparece no filtro por data
-      const d = new Date(r.data_matricula + 'T12:00:00');
-      if(mesMat && (d.getMonth()+1) !== parseInt(mesMat)) return false;
-      if(anoMat && d.getFullYear()  !== parseInt(anoMat))  return false;
+  return TODOS.filter(r=>{
+    if(t && r.turma!==t) return false;
+    if(mesMat||anoMat){
+      if(!r.data_matricula) return false;
+      const d=new Date(r.data_matricula+'T12:00:00');
+      if(mesMat && (d.getMonth()+1)!==parseInt(mesMat)) return false;
+      if(anoMat && d.getFullYear()!==parseInt(anoMat)) return false;
     }
-
-    // Filtros de data de conclusão
-    if(mesConc || anoConc){
-      if(!r.data_conclusao) return false; // sem data = não aparece no filtro por data
-      const d = new Date(r.data_conclusao + 'T12:00:00');
-      if(mesConc && (d.getMonth()+1) !== parseInt(mesConc)) return false;
-      if(anoConc && d.getFullYear()  !== parseInt(anoConc))  return false;
+    if(mesConc||anoConc){
+      if(!r.data_conclusao) return false;
+      const d=new Date(r.data_conclusao+'T12:00:00');
+      if(mesConc && (d.getMonth()+1)!==parseInt(mesConc)) return false;
+      if(anoConc && d.getFullYear()!==parseInt(anoConc)) return false;
     }
-
     return true;
   });
 }
@@ -667,9 +643,8 @@ function renderRanking(){
 const pags = {antes:1,depois:1};
 function renderTabela(momento){
   const busca=(document.getElementById('busca-'+momento).value||'').toLowerCase();
-  const filtroTurma=document.getElementById('filtro-'+momento+'-turma')?.value||'';
-  // Usa filtrar() para respeitar filtros de data de matrícula/conclusão
-  let dados=filtrar().filter(r=>r.momento===momento);
+  const filtroTurma=document.getElementById('filtro-'+momento+'-turma').value;
+  let dados=TODOS.filter(r=>r.momento===momento);
   if(filtroTurma) dados=dados.filter(r=>r.turma===filtroTurma);
   if(busca) dados=dados.filter(r=>(r.nome||'').toLowerCase().includes(busca)||(r.turma||'').toLowerCase().includes(busca));
 
@@ -682,15 +657,18 @@ function renderTabela(momento){
 
   const thead=document.getElementById('thead-'+momento);
   const tbody=document.getElementById('tbody-'+momento);
-  thead.innerHTML=`<tr><th>Nome</th><th>Turma</th><th>Matrícula</th><th>Conclusão</th><th>Score</th><th>Nível</th></tr>`;
+  thead.innerHTML=`<tr><th>Nome</th><th>Turma</th><th>Score</th><th>Nível</th>${PERGUNTAS_NOMES.map((_,i)=>`<th>P${i+1}</th>`).join('')}</tr>`;
   tbody.innerHTML=slice.map(r=>`
     <tr>
       <td style="font-weight:600;min-width:160px">${r.nome||'—'}</td>
       <td style="min-width:140px;font-size:11px;color:var(--cinza-m)">${(r.turma||'').substring(0,35)}</td>
-      <td style="font-size:11px;color:var(--cinza-m)">${r.data_matricula||'—'}</td>
-      <td style="font-size:11px;color:var(--cinza-m)">${r.data_conclusao||'—'}</td>
-      <td class="mono" style="color:${momento==='antes'?'#ef4444':'#10b981'};font-weight:700">${fmt(r.score_total,2)||'—'}</td>
+      <td class="mono" style="color:${momento==='antes'?'#ef4444':'#10b981'};font-weight:700">${r.score_total||'—'}</td>
       <td><span class="tag tag-${r.nivel}">${nomeNivel(r.nivel)}</span></td>
+      ${[1,2,3,4,5,6,7,8,9,10].map(n=>{
+        const v=r['r0'+n]||r['r'+n]||r[`r${String(n).padStart(2,'0')}`];
+        const txt=v?optTexto(n-1,v):'—';
+        return `<td title="${txt}" style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${txt.substring(0,30)}${txt.length>30?'…':''}</td>`;
+      }).join('')}
     </tr>`).join('');
 
   // Paginação
