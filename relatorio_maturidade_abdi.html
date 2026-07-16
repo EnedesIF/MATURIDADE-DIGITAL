@@ -703,6 +703,99 @@ function irPara(pagina){
   event.target.classList.add('ativo');
 }
 
+async function exportarExcel() {
+  showToast('Gerando Excel...');
+
+  const rows = await supaFetch('respostas', {
+    select: 'nome,turma,momento,score_total,nivel,ano_conclusao,data_conclusao',
+    order: 'nome.asc'
+  });
+
+  if (!rows || !rows.length) { showToast('Nenhum dado encontrado.'); return; }
+
+  const mapa = {};
+  rows.forEach(r => {
+    const k = (r.nome||'').trim().toLowerCase();
+    if (!mapa[k]) mapa[k] = { nome: r.nome, turma: r.turma, ano: r.ano_conclusao, antes: null, depois: null };
+    if (r.momento === 'antes')  mapa[k].antes  = { score: r.score_total, nivel: r.nivel };
+    if (r.momento === 'depois') mapa[k].depois = { score: r.score_total, nivel: r.nivel };
+  });
+
+  const todas = Object.values(mapa).sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+  const r2025 = todas.filter(r => r.ano === 2025);
+  const r2026 = todas.filter(r => r.ano === 2026);
+
+  function cab(cor) {
+    return `<tr style="background:${cor};color:#fff;font-weight:bold;">
+      <td>#</td><td>Nome</td><td>Turma</td>
+      <td>Score Antes</td><td>Score Depois</td><td>Evolução</td>
+      <td>Nível Antes</td><td>Nível Depois</td><td>Ano</td></tr>`;
+  }
+
+  function linhas(arr) {
+    return [...arr].sort((a,b)=>{
+      const ea = (a.antes&&a.depois)?a.depois.score-a.antes.score:-999;
+      const eb = (b.antes&&b.depois)?b.depois.score-b.antes.score:-999;
+      return eb-ea;
+    }).map((r,i)=>{
+      const sa=r.antes?r.antes.score:'', sd=r.depois?r.depois.score:'';
+      const ev=(sa!==''&&sd!=='')?Number(sd-sa).toFixed(2):'';
+      const bg=i%2===0?'#EBF3FB':'#FFFFFF';
+      return `<tr style="background:${bg}"><td>${i+1}</td><td>${r.nome||''}</td><td>${r.turma||''}</td>
+        <td>${sa}</td><td>${sd}</td><td>${ev}</td>
+        <td>${r.antes?r.antes.nivel||'':''}</td><td>${r.depois?r.depois.nivel||'':''}</td>
+        <td>${r.ano||''}</td></tr>`;
+    }).join('');
+  }
+
+  function calcIMD(arr) {
+    const p=arr.filter(r=>r.antes&&r.depois);
+    if(!p.length) return {};
+    const ma=p.reduce((s,r)=>s+r.antes.score,0)/p.length;
+    const md=p.reduce((s,r)=>s+r.depois.score,0)/p.length;
+    const imd=((md-ma)/ma*100);
+    return {n:p.length,ma:ma.toFixed(2),md:md.toFixed(2),ev:(md-ma).toFixed(2),imd:imd.toFixed(2),ating:(imd/30*100).toFixed(1)};
+  }
+
+  const g=calcIMD(todas), i25=calcIMD(r2025), i26=calcIMD(r2026);
+
+  const dash=`<table>
+    <tr style="background:#1F4E79;color:#fff;font-weight:bold;font-size:13px;"><td colspan="4">📊 MATURIDADE DIGITAL ABDI — ENEDES · IFB Digital | Gerado em ${new Date().toLocaleDateString('pt-BR')}</td></tr>
+    <tr style="background:#2E4057;color:#fff;font-weight:bold;"><td>Indicador</td><td>2025</td><td>2026</td><td>Geral</td></tr>
+    <tr style="background:#EBF3FB"><td>Participantes</td><td>${i25.n||'-'}</td><td>${i26.n||'-'}</td><td>${g.n||'-'}</td></tr>
+    <tr><td>Score Médio ANTES</td><td>${i25.ma||'-'}</td><td>${i26.ma||'-'}</td><td>${g.ma||'-'}</td></tr>
+    <tr style="background:#EBF3FB"><td>Score Médio DEPOIS</td><td>${i25.md||'-'}</td><td>${i26.md||'-'}</td><td>${g.md||'-'}</td></tr>
+    <tr><td>Evolução Média</td><td>+${i25.ev||'-'}</td><td>+${i26.ev||'-'}</td><td>+${g.ev||'-'}</td></tr>
+    <tr style="background:#EBF3FB"><td><b>IMD Projeto</b></td><td><b>${i25.imd||'-'}%</b></td><td><b>${i26.imd||'-'}%</b></td><td><b>${g.imd||'-'}%</b></td></tr>
+    <tr><td>Meta ABDI</td><td>30%</td><td>30%</td><td>30%</td></tr>
+    <tr style="background:#E8F8E8"><td><b>Atingimento ✅</b></td><td><b>${i25.ating||'-'}%</b></td><td><b>${i26.ating||'-'}%</b></td><td><b>${g.ating||'-'}%</b></td></tr>
+  </table>`;
+
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office"
+    xmlns:x="urn:schemas-microsoft-com:office:excel"
+    xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="UTF-8">
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
+    <x:ExcelWorksheet><x:Name>Dashboard</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+    <x:ExcelWorksheet><x:Name>Ranking Completo</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+    <x:ExcelWorksheet><x:Name>Concluintes 2025</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+    <x:ExcelWorksheet><x:Name>Concluintes 2026</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+  </x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  </head><body>
+    ${dash}<br><br>
+    <table>${cab('#7B2FBE')}${linhas(todas)}</table><br><br>
+    <table>${cab('#B7950D')}${linhas(r2025)}</table><br><br>
+    <table>${cab('#1A5276')}${linhas(r2026)}</table>
+  </body></html>`;
+
+  const blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Maturidade_Digital_ENEDES_'+new Date().toISOString().slice(0,10)+'.xls';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('✅ Excel gerado com sucesso!');
+}
+
 carregar();
 </script>
 </body>
