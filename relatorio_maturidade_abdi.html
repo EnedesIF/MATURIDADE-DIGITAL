@@ -374,19 +374,43 @@ const SUPA_ANON = 'sb_publishable_kSWiiwIrDWInbr5tywIG0g_8Kwpzr_-';
 const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
 async function supaFetch(tabela, params){
+  // Paginacao automatica via header Range — traz TODAS as linhas (evita corte em 1000)
   const url = new URL(`${SUPA_URL}/rest/v1/${tabela}`);
   Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
-  const resp = await fetch(url.toString(), {
-    headers:{ 'apikey': SUPA_ANON, 'Authorization': 'Bearer '+SUPA_ANON, 'Accept': 'application/json' }
-  });
-  if(!resp.ok) throw new Error('HTTP '+resp.status);
-  return await resp.json();
+  const PAGE = 1000;
+  let desde = 0, todos = [];
+  while(true){
+    const resp = await fetch(url.toString(), {
+      headers:{
+        'apikey': SUPA_ANON,
+        'Authorization': 'Bearer '+SUPA_ANON,
+        'Accept': 'application/json',
+        'Range-Unit': 'items',
+        'Range': `${desde}-${desde+PAGE-1}`
+      }
+    });
+    if(!resp.ok && resp.status!==206) throw new Error('HTTP '+resp.status);
+    const lote = await resp.json();
+    if(!Array.isArray(lote) || lote.length===0) break;
+    todos = todos.concat(lote);
+    if(lote.length < PAGE) break;
+    desde += PAGE;
+    if(desde > 100000) break; // trava de seguranca
+  }
+  return todos;
 }
 
 const NIVEIS_NOMES = ['Iniciante Digital','Em Desenvolvimento','Em Transição','Digitalmente Ativo','Referência Digital'];
 const NIVEIS_CORES = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6'];
 const DIMS = ['Atendimento','Financeiro','Marketing','Gestão','Confiança'];
 const DIMS_FIELDS = ['dim_atendimento','dim_financeiro','dim_marketing','dim_gestao','dim_confianca'];
+
+// Normaliza nome/turma: minusculo, sem acento, espacos colapsados
+function norm(s){
+  return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().trim().replace(/\s+/g,' ');
+}
+function chavePessoa(r){ return norm(r.nome)+'|'+norm(r.turma); }
 
 const PERGUNTAS_NOMES = [
   'Como você atende e se comunica com seus clientes?',
@@ -470,8 +494,8 @@ function aplicarFiltro(){
 function getSituacao(){ const el=document.getElementById('filtro-situacao'); return el?el.value:'todos'; }
 
 function paresCompletos(dados){
-  const kA = new Set(dados.filter(r=>r.momento==='antes').map(r=>(r.nome||'')+'|'+(r.turma||'')));
-  const kD = new Set(dados.filter(r=>r.momento==='depois').map(r=>(r.nome||'')+'|'+(r.turma||'')));
+  const kA = new Set(dados.filter(r=>r.momento==='antes').map(chavePessoa));
+  const kD = new Set(dados.filter(r=>r.momento==='depois').map(chavePessoa));
   const completos = new Set(), soInicial = new Set();
   kA.forEach(k=>{ if(kD.has(k)) completos.add(k); else soInicial.add(k); });
   return {completos, soInicial};
@@ -503,27 +527,37 @@ function filtrar(){
   if(sit==='todos') return base;
   const {completos, soInicial} = paresCompletos(base);
   const alvo = sit==='completos' ? completos : soInicial;
-  return base.filter(r=>alvo.has((r.nome||'')+'|'+(r.turma||'')));
+  return base.filter(r=>alvo.has(chavePessoa(r)));
 }
 
 function calcMetricas(dados){
   const todosAntes  = dados.filter(r=>r.momento==='antes');
   const todosDepois = dados.filter(r=>r.momento==='depois');
   // Garante só participantes com PAR completo (antes E depois)
-  const keysDepois = new Set(todosDepois.map(r=>(r.nome||'')+'|'+(r.turma||'')));
-  const keysAntes  = new Set(todosAntes.map(r=>(r.nome||'')+'|'+(r.turma||'')));
-  const antes  = todosAntes.filter(r=>keysDepois.has((r.nome||'')+'|'+(r.turma||'')));
-  const depois = todosDepois.filter(r=>keysAntes.has((r.nome||'')+'|'+(r.turma||'')));
+  const keysDepois = new Set(todosDepois.map(chavePessoa));
+  const keysAntes  = new Set(todosAntes.map(chavePessoa));
+  const antes  = todosAntes.filter(r=>keysDepois.has(chavePessoa(r)));
+  const depois = todosDepois.filter(r=>keysAntes.has(chavePessoa(r)));
   const avgA = antes.length  ? antes.reduce((a,r)=>a+r.score_total,0)/antes.length  : 0;
   const avgD = depois.length ? depois.reduce((a,r)=>a+r.score_total,0)/depois.length : 0;
   const imd  = avgA>0 ? ((avgD-avgA)/avgA)*100 : 0;
   const ating = (imd/30)*100;
   const evMedia = avgD-avgA;
+  // Pessoas únicas (nome+turma normalizados) considerando TODO o conjunto recebido
+  const setPessoas = new Set(dados.map(chavePessoa));
+  const pessoasUnicas = setPessoas.size;
+  // Pendentes = tem 'antes' mas não tem 'depois'
+  const setAntesAll  = new Set(todosAntes.map(chavePessoa));
+  const setDepoisAll = new Set(todosDepois.map(chavePessoa));
+  let pendentes = 0; const listaPendentes=[];
+  setAntesAll.forEach(k=>{ if(!setDepoisAll.has(k)){ pendentes++; } });
+  const regsAntesPend = todosAntes.filter(r=>!setDepoisAll.has(chavePessoa(r)));
+  const avgAntesPend = regsAntesPend.length ? regsAntesPend.reduce((a,r)=>a+r.score_total,0)/regsAntesPend.length : 0;
 
   const mapaA={};
-  antes.forEach(r=>{ mapaA[(r.nome||'')+'|'+(r.turma||'')]=r; });
+  antes.forEach(r=>{ mapaA[chavePessoa(r)]=r; });
   let mudaram=0;
-  depois.forEach(r=>{ const k=(r.nome||'')+'|'+(r.turma||''); if(mapaA[k]&&mapaA[k].nivel!==r.nivel) mudaram++; });
+  depois.forEach(r=>{ const k=chavePessoa(r); if(mapaA[k]&&mapaA[k].nivel!==r.nivel) mudaram++; });
 
   const distA  = [0,1,2,3,4].map(n=>antes.filter(r=>r.nivel===n).length);
   const distD  = [0,1,2,3,4].map(n=>depois.filter(r=>r.nivel===n).length);
@@ -532,14 +566,14 @@ function calcMetricas(dados){
 
   const rl=[];
   depois.forEach(r=>{
-    const k=(r.nome||'')+'|'+(r.turma||'');
+    const k=chavePessoa(r);
     const ra=mapaA[k];
     if(ra) rl.push({nome:r.nome,turma:r.turma,antes:ra.score_total,depois:r.score_total,evol:r.score_total-ra.score_total,nA:nomeNivel(ra.nivel),nD:nomeNivel(r.nivel),nivelA:ra.nivel,nivelD:r.nivel});
   });
   rl.sort((a,b)=>b.evol-a.evol);
   rankList = rl;
 
-  return {antes,depois,avgA,avgD,imd,ating,evMedia,mudaram,distA,distD,avgDimA,avgDimD,rl};
+  return {antes,depois,avgA,avgD,imd,ating,evMedia,mudaram,distA,distD,avgDimA,avgDimD,rl,pessoasUnicas,pendentes,regsAntesPend,avgAntesPend};
 }
 
 function renderDash(){
@@ -556,7 +590,7 @@ function renderDash(){
 
   // KPIs
   document.getElementById('kpis').innerHTML = `
-    <div class="kpi-card azul"><div class="kpi-label">Participantes</div><div class="kpi-valor azul">${m.antes.length}</div><div class="kpi-desc">com avaliação ANTES<br>${m.depois.length} responderam DEPOIS</div></div>
+    <div class="kpi-card azul"><div class="kpi-label">${getSituacao()==='inicial'?'Pendentes':'Participantes'}</div><div class="kpi-valor azul">${m.pessoasUnicas}</div><div class="kpi-desc">${getSituacao()==='inicial'?'só fizeram o inicial<br>média inicial: '+fmt(m.avgAntesPend,1)+' pts':'pessoas únicas (nome+turma)<br>'+m.antes.length+' com par completo · '+m.pendentes+' só no inicial'}</div></div>
     <div class="kpi-card verde"><div class="kpi-label">IMD Projeto</div><div class="kpi-valor verde">${fmt(m.imd,1)}%</div><div class="kpi-desc">Fórmula oficial ABDI<br>Meta: 30%</div></div>
     <div class="kpi-card ${m.imd>=30?'destaque':'amarelo'}"><div class="kpi-label">Atingimento</div><div class="kpi-valor ${m.imd>=30?'destaque':'amarelo'}">${fmt(m.ating,0)}%</div><div class="kpi-desc">da meta ABDI<br>${m.imd>=30?'✅ Meta superada!':'⚠️ Abaixo da meta'}</div></div>
     <div class="kpi-card roxo"><div class="kpi-label">Mudaram de nível</div><div class="kpi-valor roxo">${m.mudaram}</div><div class="kpi-desc">participantes<br>(${m.antes.length>0?((m.mudaram/m.antes.length)*100).toFixed(0):0}% do total)</div></div>
@@ -574,12 +608,30 @@ function renderDash(){
     <div><div class="res-label">🎯 Meta ABDI: 30% de evolução</div><div class="res-meta">Atingimento: ${fmt(m.ating,0)}% da meta${m.imd>=30?' · Superada em +'+fmt(m.imd-30,2)+' p.p.':''}</div></div>
     <div class="res-val">${fmt(m.imd,1)}%</div>`;
 
+  const situacaoAtual = getSituacao();
   if(semPares){
-    document.getElementById('formula-box').innerHTML =
-      '⚠️ Não aplicável — os blocos de evolução (IMD, comparativo, radar) exigem participantes com <b>par completo</b> (antes e depois). No filtro atual não há pares.';
-    document.getElementById('formula-passos').innerHTML='';
-    document.getElementById('resultado-abdi').innerHTML=
-      '<div style="font-size:13px;color:#6b7280">Selecione \'Todos\' ou \'Só completos\' para ver os indicadores de evolução.</div>';
+    if(situacaoAtual==='inicial'){
+      // PAINEL DE PENDENTES — quem fez o inicial e ainda não fez o depois
+      const nomes = m.regsAntesPend
+        .slice()
+        .sort((a,b)=>(a.nome||'').localeCompare(b.nome||''))
+        .map(r=>`<tr><td style="padding:6px 10px;border-bottom:1px solid var(--borda)">${r.nome||'—'}</td><td style="padding:6px 10px;border-bottom:1px solid var(--borda);color:var(--cinza-m);font-size:12px">${(r.turma||'').substring(0,45)}</td><td style="padding:6px 10px;border-bottom:1px solid var(--borda);text-align:right;font-family:'JetBrains Mono',monospace;color:#ef4444;font-weight:700">${r.score_total??'—'}</td></tr>`)
+        .join('');
+      document.getElementById('formula-box').innerHTML =
+        `📝 <b>${m.pendentes} pessoas</b> fizeram o diagnóstico inicial e <b>ainda não fizeram o final</b>. Média delas no inicial: <b>${fmt(m.avgAntesPend,2)}</b> pontos. Os indicadores de evolução (IMD, radar, comparativo) não se aplicam a este grupo — aparecem quando elas completarem o diagnóstico final.`;
+      document.getElementById('formula-passos').innerHTML='';
+      document.getElementById('resultado-abdi').innerHTML=
+        `<div style="width:100%"><div class="res-label" style="margin-bottom:8px">📋 Lista de pendentes (${m.pendentes})</div>`+
+        `<div style="max-height:340px;overflow-y:auto;background:#fff;border:1px solid var(--borda);border-radius:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="text-align:left;padding:8px 10px;background:var(--cinza-l);position:sticky;top:0">Nome</th><th style="text-align:left;padding:8px 10px;background:var(--cinza-l);position:sticky;top:0">Turma</th><th style="text-align:right;padding:8px 10px;background:var(--cinza-l);position:sticky;top:0">Score inicial</th></tr></thead><tbody>${nomes||'<tr><td colspan=3 style=\'padding:12px;text-align:center;color:#6b7280\'>Nenhum pendente neste filtro.</td></tr>'}</tbody></table></div></div>`;
+      // ajusta KPIs para refletir pendentes em vez de zeros
+      document.getElementById('hdr-badge').textContent = `📝 ${m.pendentes} pendentes (só fizeram o inicial)`;
+    } else {
+      document.getElementById('formula-box').innerHTML =
+        '⚠️ Não aplicável — os blocos de evolução (IMD, comparativo, radar) exigem participantes com <b>par completo</b> (antes e depois). No filtro atual não há pares.';
+      document.getElementById('formula-passos').innerHTML='';
+      document.getElementById('resultado-abdi').innerHTML=
+        '<div style="font-size:13px;color:#6b7280">Selecione \'Todos\' ou \'Só completos\' para ver os indicadores de evolução.</div>';
+    }
   }
 
   // Comp
