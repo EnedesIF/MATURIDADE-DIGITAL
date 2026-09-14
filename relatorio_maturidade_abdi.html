@@ -233,6 +233,11 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
 <div class="filtros-barra">
   <span style="font-size:11px;font-weight:600;color:var(--cinza-m);white-space:nowrap">🔽 Filtros:</span>
   <select id="filtro-turma" onchange="aplicarFiltro()"><option value="">Todas as turmas</option></select>
+  <select id="filtro-situacao" onchange="aplicarFiltro()">
+    <option value="todos">👥 Situação: Todos</option>
+    <option value="completos">✅ Só completos (antes+depois)</option>
+    <option value="inicial">📝 Só no inicial</option>
+  </select>
   <select id="filtro-mes-mat" onchange="aplicarFiltro()">
     <option value="">📅 Matrícula: mês</option>
     <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
@@ -462,13 +467,23 @@ function aplicarFiltro(){
   renderTabela('depois');
 }
 
+function getSituacao(){ const el=document.getElementById('filtro-situacao'); return el?el.value:'todos'; }
+
+function paresCompletos(dados){
+  const kA = new Set(dados.filter(r=>r.momento==='antes').map(r=>(r.nome||'')+'|'+(r.turma||'')));
+  const kD = new Set(dados.filter(r=>r.momento==='depois').map(r=>(r.nome||'')+'|'+(r.turma||'')));
+  const completos = new Set(), soInicial = new Set();
+  kA.forEach(k=>{ if(kD.has(k)) completos.add(k); else soInicial.add(k); });
+  return {completos, soInicial};
+}
+
 function filtrar(){
   const t       = document.getElementById('filtro-turma').value;
   const mesMat  = document.getElementById('filtro-mes-mat')?.value;
   const anoMat  = document.getElementById('filtro-ano-mat')?.value;
   const mesConc = document.getElementById('filtro-mes-conc')?.value;
   const anoConc = document.getElementById('filtro-ano-conc')?.value;
-  return TODOS.filter(r=>{
+  let base = TODOS.filter(r=>{
     if(t && r.turma!==t) return false;
     if(mesMat||anoMat){
       if(!r.data_matricula) return false;
@@ -484,6 +499,11 @@ function filtrar(){
     }
     return true;
   });
+  const sit = getSituacao();
+  if(sit==='todos') return base;
+  const {completos, soInicial} = paresCompletos(base);
+  const alvo = sit==='completos' ? completos : soInicial;
+  return base.filter(r=>alvo.has((r.nome||'')+'|'+(r.turma||'')));
 }
 
 function calcMetricas(dados){
@@ -525,11 +545,14 @@ function calcMetricas(dados){
 function renderDash(){
   const dados = filtrar();
   const m = calcMetricas(dados);
+  const semPares = (m.antes.length===0 || m.depois.length===0);
   const turma = document.getElementById('filtro-turma').value;
   const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 
   document.getElementById('hdr-sub').textContent = (turma?'Turma: '+turma:'Todas as turmas')+' · Gerado em '+hoje;
-  document.getElementById('hdr-badge').textContent = `${m.imd>=30?'🏆':'📈'} IMD Projeto: ${fmt(m.imd,1)}% · Atingimento: ${fmt(m.ating,0)}%`;
+  document.getElementById('hdr-badge').textContent = semPares
+    ? '📊 IMD não aplicável neste filtro (sem par completo)'
+    : `${m.imd>=30?'🏆':'📈'} IMD Projeto: ${fmt(m.imd,1)}% · sobre ${m.antes.length} com par completo · Atingimento: ${fmt(m.ating,0)}%`;
 
   // KPIs
   document.getElementById('kpis').innerHTML = `
@@ -550,6 +573,14 @@ function renderDash(){
   document.getElementById('resultado-abdi').innerHTML = `
     <div><div class="res-label">🎯 Meta ABDI: 30% de evolução</div><div class="res-meta">Atingimento: ${fmt(m.ating,0)}% da meta${m.imd>=30?' · Superada em +'+fmt(m.imd-30,2)+' p.p.':''}</div></div>
     <div class="res-val">${fmt(m.imd,1)}%</div>`;
+
+  if(semPares){
+    document.getElementById('formula-box').innerHTML =
+      '⚠️ Não aplicável — os blocos de evolução (IMD, comparativo, radar) exigem participantes com <b>par completo</b> (antes e depois). No filtro atual não há pares.';
+    document.getElementById('formula-passos').innerHTML='';
+    document.getElementById('resultado-abdi').innerHTML=
+      '<div style="font-size:13px;color:#6b7280">Selecione \'Todos\' ou \'Só completos\' para ver os indicadores de evolução.</div>';
+  }
 
   // Comp
   document.getElementById('comp-grid').innerHTML = `
