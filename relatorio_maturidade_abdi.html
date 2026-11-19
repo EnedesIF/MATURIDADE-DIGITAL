@@ -223,6 +223,7 @@ footer{text-align:center;padding:20px;font-size:11px;color:var(--cinza-m);border
     <button class="nav-tab ativo" onclick="irPara('dashboard',this)">📊 Dashboard</button>
     <button class="nav-tab" onclick="irPara('metodologia',this)">📋 Metodologia</button>
     <button class="nav-tab" onclick="irPara('ranking',this)">🏆 Ranking</button>
+    <button class="nav-tab" onclick="irPara('cobertura',this)">📋 Turmas</button>
     <button class="nav-tab" onclick="irPara('antes',this)">📄 Antes</button>
     <button class="nav-tab" onclick="irPara('depois',this)">📄 Depois</button>
   </div>
@@ -473,6 +474,44 @@ footer{text-align:center;padding:20px;font-size:11px;color:var(--cinza-m);border
   </div>
 </div><!-- /ranking -->
 
+<!-- COBERTURA POR TURMA -->
+<div class="page" id="page-cobertura">
+  <div class="header-bloco">
+    <div class="header-logo">COBERTURA</div>
+    <div class="header-title">Participantes por Turma</div>
+    <div class="header-sub" id="cob-sub">Todas as turmas · Carregando...</div>
+  </div>
+  <div class="page" style="display:block;padding:0">
+    <div class="tabela-wrap">
+      <div class="tabela-header">
+        <h3>📋 Turmas no Relatório</h3>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto">
+          <span style="font-size:11px;display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block"></span>Curso ativo na plataforma</span>
+          <span style="font-size:11px;display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#6b7280;display:inline-block"></span>Ciclo anterior / outra unidade</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Turma / Curso</th>
+              <th style="text-align:center">Pares<br><span style="font-weight:400;color:var(--cinza-m)">antes+depois</span></th>
+              <th style="text-align:center">Score<br><span style="font-weight:400;color:var(--cinza-m)">médio antes</span></th>
+              <th style="text-align:center">Score<br><span style="font-weight:400;color:var(--cinza-m)">médio depois</span></th>
+              <th style="text-align:center">Evolução<br><span style="font-weight:400;color:var(--cinza-m)">média</span></th>
+              <th style="text-align:center">IMD<br><span style="font-weight:400;color:var(--cinza-m)">turma</span></th>
+              <th style="text-align:center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="cob-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;font-size:11px;color:var(--cinza-m);border-top:1px solid var(--borda)" id="cob-footer"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ANTES -->
 <div class="page" id="page-antes">
   <div class="tabela-wrap">
@@ -531,6 +570,7 @@ function irPara(id,el){
   // Preencher tabelas sob demanda
   if(id==='antes'&&!document.getElementById('antes-tbody').dataset.loaded) loadMomento('antes');
   if(id==='depois'&&!document.getElementById('depois-tbody').dataset.loaded) loadMomento('depois');
+  if(id==='cobertura') renderCobertura(filtered.length?filtered:allData);
 }
 
 async function carregarTudo(){
@@ -539,6 +579,7 @@ async function carregarTudo(){
     document.getElementById('loading').innerHTML='<p style="color:#ef4444;font-size:14px">Erro ao carregar dados. Verifique a conexão.</p>';
     return;
   }
+  // Filtrar turmas fora do escopo ENEDES/ABDI
   allData=comp.sort((a,b)=>b.evolucao-a.evolucao);
 
   // Popular filtro de anos (extrai ano de data_inicial ou turma)
@@ -711,6 +752,7 @@ function renderDashboard(data){
   // Atualizar ranking se visível
   filtered=data;
   if(document.getElementById('page-ranking').classList.contains('ativo')) renderRanking();
+  if(document.getElementById('page-cobertura').classList.contains('ativo')) renderCobertura(data);
   document.getElementById('footer-txt').textContent=
     'ENEDES · IFB Digital · Convênio ABDI · Relatório gerado em '+new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 }
@@ -782,6 +824,90 @@ function exportCSV(){
   a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
   a.download='maturidade_digital_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
+}
+
+// Cursos oficiais da plataforma ENEDES (lista da planilha de matrículas)
+// Banco já foi limpo — todos os registros são válidos
+const CURSOS_ENEDES = [
+  'atendimento ao cliente',
+  'branding',
+  'criatividade',
+  'google ads','dominando o google',
+  'desvendando a ferramenta meta','meta ads',
+  'modelos de negócios',
+  'pesquisa de mercado',
+  'quanto custa montar',
+  'comunicação estratégica','comunicação visual','comunicação empresarial',
+  'contabilidade',
+  'contratando com sucesso',
+  'formalizar',
+  'direito',
+  'gestão do desempenho','gestão de estoques',
+  'vídeos que vendem',
+  'introdução ao branding',
+  'precificação',
+  'financiamento para novos negócios',
+  'loja virtual',
+  'comportamento do consumidor',
+  'decifre os dados',
+];
+
+function isCursoAtivo(turma) {
+  if (!turma) return true; // banco limpo: todos são válidos
+  const t = turma.toLowerCase();
+  return CURSOS_ENEDES.some(k => t.includes(k));
+}
+
+function renderCobertura(data) {
+  // Agrupar por turma
+  const grupos = {};
+  data.forEach(r => {
+    const t = r.turma || 'Turma não informada';
+    if (!grupos[t]) grupos[t] = [];
+    grupos[t].push(r);
+  });
+
+  // Ordenar por número de participantes desc
+  const turmas = Object.entries(grupos).sort((a, b) => b[1].length - a[1].length);
+
+  const tbody = document.getElementById('cob-tbody');
+  tbody.innerHTML = turmas.map(([turma, rows], i) => {
+    const n = rows.length;
+    const mA = rows.reduce((s, r) => s + r.score_antes, 0) / n;
+    const mD = rows.reduce((s, r) => s + r.score_depois, 0) / n;
+    const evo = mD - mA;
+    const imd = (evo / mA * 100).toFixed(1);
+    const ativo = isCursoAtivo(turma);
+    const dot = ativo
+      ? '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#10b981;margin-right:6px;flex-shrink:0"></span>'
+      : '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#9ca3af;margin-right:6px;flex-shrink:0"></span>';
+    const statusBadge = ativo
+      ? '<span style="font-size:10px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap">✅ Ativo</span>'
+      : '<span style="font-size:10px;background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap">📁 Ciclo anterior</span>';
+    const imdCor = parseFloat(imd) >= 30 ? '#059669' : '#d97706';
+    return `<tr>
+      <td style="color:var(--cinza-m);font-family:'JetBrains Mono',monospace;font-size:11px">${i+1}</td>
+      <td style="max-width:320px">
+        <div style="display:flex;align-items:flex-start;gap:0">${dot}<span style="font-size:12px;font-weight:600;line-height:1.4">${turma}</span></div>
+      </td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--azul-m)">${n}</td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:#ef4444">${mA.toFixed(1)}</td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:#10b981">${mD.toFixed(1)}</td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--azul-m);font-weight:700">+${evo.toFixed(1)}</td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${imdCor}">${imd}%</td>
+      <td style="text-align:center">${statusBadge}</td>
+    </tr>`;
+  }).join('');
+
+  const ativos = turmas.filter(([t]) => isCursoAtivo(t));
+  const anteriores = turmas.filter(([t]) => !isCursoAtivo(t));
+  const ptAtivos = ativos.reduce((s, [, r]) => s + r.length, 0);
+  const ptAnteriores = anteriores.reduce((s, [, r]) => s + r.length, 0);
+
+  document.getElementById('cob-footer').innerHTML =
+    `<strong>${turmas.length} turmas</strong> · ${ptAtivos} participantes em cursos ativos · ${ptAnteriores} em ciclos anteriores/outras unidades · Total: ${data.length} pares`;
+  document.getElementById('cob-sub').textContent =
+    `${turmas.length} turmas · ${data.length} participantes`;
 }
 
 // INIT
