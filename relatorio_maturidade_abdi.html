@@ -233,7 +233,12 @@ footer{text-align:center;padding:20px;font-size:11px;color:var(--cinza-m);border
 
 <!-- FILTROS -->
 <div class="filtros-barra" id="filtros-dash">
-  <select id="filtro-turma" onchange="aplicarFiltro()"><option value="">Todas as turmas</option></select>
+  <select id="filtro-ano" onchange="aplicarFiltro()">
+    <option value="">Todos os anos</option>
+  </select>
+  <select id="filtro-turma" onchange="aplicarFiltro()">
+    <option value="">Todos os cursos</option>
+  </select>
   <span id="filtro-status" style="font-size:11px;color:var(--cinza-m)"></span>
   <button class="btn-pdf" onclick="window.print()">📄 PDF</button>
   <button class="btn-export" onclick="exportCSV()">⬇ Excel</button>
@@ -536,7 +541,16 @@ async function carregarTudo(){
   }
   allData=comp.sort((a,b)=>b.evolucao-a.evolucao);
 
-  // Popular filtro de turmas
+  // Popular filtro de anos (extrai ano de data_inicial ou turma)
+  const anos=[...new Set(comp.map(r=>{
+    if(r.data_inicial) return new Date(r.data_inicial).getFullYear().toString();
+    const m=r.turma&&r.turma.match(/20\d\d/);
+    return m?m[0]:'';
+  }).filter(Boolean))].sort().reverse();
+  const selAno=document.getElementById('filtro-ano');
+  anos.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; selAno.appendChild(o); });
+
+  // Popular filtro de turmas/cursos
   const turmas=[...new Set(comp.map(r=>r.turma).filter(Boolean))].sort();
   const sel=document.getElementById('filtro-turma');
   turmas.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
@@ -547,7 +561,21 @@ async function carregarTudo(){
 
 function aplicarFiltro(){
   const t=document.getElementById('filtro-turma').value;
-  filtered=t?allData.filter(r=>r.turma===t):allData;
+  const a=document.getElementById('filtro-ano').value;
+  filtered=allData.filter(r=>{
+    const anoR=r.data_inicial?new Date(r.data_inicial).getFullYear().toString():(r.turma&&r.turma.match(/20\d\d/)?r.turma.match(/20\d\d/)[0]:'');
+    if(a && anoR!==a) return false;
+    if(t && r.turma!==t) return false;
+    return true;
+  });
+  // Atualizar select de turmas com base no ano selecionado
+  if(a){
+    const turmasDoAno=[...new Set(filtered.map(r=>r.turma).filter(Boolean))].sort();
+    const sel=document.getElementById('filtro-turma');
+    const valAtual=sel.value;
+    sel.innerHTML='<option value="">Todos os cursos</option>';
+    turmasDoAno.forEach(tr=>{ const o=document.createElement('option'); o.value=tr; o.textContent=tr; if(tr===valAtual) o.selected=true; sel.appendChild(o); });
+  }
   renderDashboard(filtered);
   // Reset ranking se já estava carregado
   rankPage=1;
