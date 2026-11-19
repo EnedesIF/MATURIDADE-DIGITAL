@@ -57,7 +57,7 @@ body{font-family:'Sora',sans-serif;background:#f0f4f8;color:var(--cinza-escuro);
 .header-bloco::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:rgba(255,255,255,.06);border-radius:50%;}
 .header-bloco::after{content:'';position:absolute;bottom:-80px;right:160px;width:180px;height:180px;background:rgba(255,255,255,.04);border-radius:50%;}
 .header-logo{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;opacity:.7;margin-bottom:6px;}
-.header-logo-img{height:48px;margin-bottom:10px;display:block;filter:brightness(0) invert(1);}
+.header-logo-img{height:52px;margin-bottom:10px;display:block;filter:brightness(0) invert(1);opacity:1;}
 .header-title{font-size:26px;font-weight:800;line-height:1.2;margin-bottom:4px;}
 .header-sub{font-size:13px;opacity:.75;margin-bottom:14px;}
 .header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;}
@@ -573,6 +573,7 @@ function irPara(id,el){
   if(id==='antes'&&!document.getElementById('antes-tbody').dataset.loaded) loadMomento('antes');
   if(id==='depois'&&!document.getElementById('depois-tbody').dataset.loaded) loadMomento('depois');
   if(id==='cobertura') renderCobertura(filtered.length?filtered:allData);
+  if(id==='ranking'&&allData.length>0){ rankPage=1; renderRanking(); }
 }
 
 async function carregarTudo(){
